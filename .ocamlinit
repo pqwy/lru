@@ -1,0 +1,31 @@
+#require "psq"
+#directory "_build/src"
+#load "lru.cma"
+#require "fmt"
+
+module I = struct
+  type t = int
+  let compare (a: int) b = compare a b
+  let hash = Hashtbl.hash
+  let equal = (=)
+  let weight a = a
+end
+
+module F = Lru.F.Make (I) (I)
+module M = Lru.M.Make (I) (I)
+
+let r _ = Random.int 100
+
+let init f n =
+  let rec go i =
+    if i = n then [] else let x = f i in x :: go (i + 1) in
+  go 0
+
+let ppf = F.pp_dump (fun ppf (k, v) -> Format.fprintf ppf "%d -> %d" k v)
+let ppm = M.pp_dump (fun ppf (k, v) -> Format.fprintf ppf "%d -> %d" k v)
+
+;;
+
+#install_printer ppf;;
+#install_printer ppm;;
+
