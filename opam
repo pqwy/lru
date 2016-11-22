@@ -7,7 +7,7 @@ license: "ISC"
 dev-repo: "https://github.com/pqwy/lru.git"
 bug-reports: "https://github.com/pqwy/lru/issues"
 tags: []
-available: [ ocaml-version >= "4.01.0"]
+available: [ ocaml-version >= "4.02.0"]
 depends: [
   "ocamlfind" {build}
   "ocamlbuild" {build}
