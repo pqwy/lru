@@ -1,3 +1,3 @@
-# vX.Y.Z YYYY-MM-DD Location
+# v0.1.0 2016-11-22
 
 First release.
