@@ -7,10 +7,11 @@
     (LRU) bindings in order to maintain the size constraint. Two implementations
     are provided: one is {{!F}functional}, the other {{!M}imperative}.
 
-    The functional map is backed by a {{:https://github.com/pqwy/psq}priority
-    search queue}. Operations on individual elements are [O(log n)].
+    The {{!F}functional} map is backed by a
+    {{:https://github.com/pqwy/psq}priority search queue}. Operations on
+    individual elements are [O(log n)].
 
-    The mutable map is backed by the standard {!Hashtbl} paired with a
+    The {{!M}mutable} map is backed by the standard {!Hashtbl} paired with a
     doubly-linked list. Operations on individual elements incur an [O(1)]
     overhead on top of hash table access.
 
