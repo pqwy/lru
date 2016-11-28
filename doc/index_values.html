@@ -2,6 +2,7 @@
 <head>
 <link rel="stylesheet" href="style.css" type="text/css">
 <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="Start" href="index.html">
 <link title="Index of types" rel=Appendix href="index_types.html">
 <link title="Index of values" rel=Appendix href="index_values.html">
@@ -17,29 +18,29 @@
 <tr><td align="left"><br>A</td></tr>
 <tr><td><a href="Lru.M.S.html#VALadd">add</a> [<a href="Lru.M.S.html">Lru.M.S</a>]</td>
 <td><div class="info">
-<code class="code">add k v t</code> adds the binding <code class="code">k <span class="keywordsign">-&gt;</span> v</code>.
+<code class="code">add&nbsp;k&nbsp;v&nbsp;t</code> adds the binding <code class="code">k&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;v</code>.
 </div>
 </td></tr>
 <tr><td><a href="Lru.F.S.html#VALadd">add</a> [<a href="Lru.F.S.html">Lru.F.S</a>]</td>
 <td><div class="info">
-<code class="code">add k v t</code> is <code class="code">t</code> with the binding <code class="code">k <span class="keywordsign">-&gt;</span> v</code>.
+<code class="code">add&nbsp;k&nbsp;v&nbsp;t</code> is <code class="code">t</code> with the binding <code class="code">k&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;v</code>.
 </div>
 </td></tr>
 <tr><td align="left"><br>C</td></tr>
 <tr><td><a href="Lru.M.S.html#VALcache">cache</a> [<a href="Lru.M.S.html">Lru.M.S</a>]</td>
 <td><div class="info">
-<code class="code">cache t f</code> caches the results of <code class="code">f</code> in <code class="code">t</code>.
+<code class="code">cache&nbsp;t&nbsp;f</code> caches the results of <code class="code">f</code> in <code class="code">t</code>.
 </div>
 </td></tr>
 <tr><td><a href="Lru.M.S.html#VALcapacity">capacity</a> [<a href="Lru.M.S.html">Lru.M.S</a>]</td>
 <td><div class="info">
-<code class="code">capacity t</code> is the maximum combined weight of bindings this map will
+<code class="code">capacity&nbsp;t</code> is the maximum combined weight of bindings this map will
         hold before they start being discarded in least-recently-used order.
 </div>
 </td></tr>
 <tr><td><a href="Lru.F.S.html#VALcapacity">capacity</a> [<a href="Lru.F.S.html">Lru.F.S</a>]</td>
 <td><div class="info">
-<code class="code">capacity t</code> is the maximum combined weight of bindings this map will
+<code class="code">capacity&nbsp;t</code> is the maximum combined weight of bindings this map will
         hold before they start being discarded in least-recently-used order.
 </div>
 </td></tr>
@@ -50,134 +51,134 @@
 </td></tr>
 <tr><td><a href="Lru.M.S.html#VALcreate">create</a> [<a href="Lru.M.S.html">Lru.M.S</a>]</td>
 <td><div class="info">
-<code class="code">create ?random cap</code> is a new map with capacity <code class="code">cap</code>.
+<code class="code">create&nbsp;?random&nbsp;cap</code> is a new map with capacity <code class="code">cap</code>.
 </div>
 </td></tr>
 <tr><td align="left"><br>D</td></tr>
 <tr><td><a href="Lru.M.S.html#VALdrop_lru">drop_lru</a> [<a href="Lru.M.S.html">Lru.M.S</a>]</td>
 <td><div class="info">
-<code class="code">drop_lru t</code> removes the binding <code class="code">lru t</code>.
+<code class="code">drop_lru&nbsp;t</code> removes the binding <code class="code">lru&nbsp;t</code>.
 </div>
 </td></tr>
 <tr><td><a href="Lru.F.S.html#VALdrop_lru">drop_lru</a> [<a href="Lru.F.S.html">Lru.F.S</a>]</td>
 <td><div class="info">
-<code class="code">drop_lru t</code> is <code class="code">t</code> without the binding <code class="code">lru t</code>, or <code class="code">t</code>, when <code class="code">t</code> is
+<code class="code">drop_lru&nbsp;t</code> is <code class="code">t</code> without the binding <code class="code">lru&nbsp;t</code>, or <code class="code">t</code>, when <code class="code">t</code> is
         empty.
 </div>
 </td></tr>
 <tr><td align="left"><br>E</td></tr>
 <tr><td><a href="Lru.F.S.html#VALempty">empty</a> [<a href="Lru.F.S.html">Lru.F.S</a>]</td>
 <td><div class="info">
-<code class="code">empty cap</code> is an empty map with capacity <code class="code">cap</code>.
+<code class="code">empty&nbsp;cap</code> is an empty map with capacity <code class="code">cap</code>.
 </div>
 </td></tr>
 <tr><td align="left"><br>F</td></tr>
 <tr><td><a href="Lru.M.S.html#VALfind">find</a> [<a href="Lru.M.S.html">Lru.M.S</a>]</td>
 <td><div class="info">
-<code class="code">find k t</code> is the <code class="code">v</code> bound to <code class="code">k</code>.
+<code class="code">find&nbsp;k&nbsp;t</code> is the <code class="code">v</code> bound to <code class="code">k</code>.
 </div>
 </td></tr>
 <tr><td><a href="Lru.F.S.html#VALfind">find</a> [<a href="Lru.F.S.html">Lru.F.S</a>]</td>
 <td><div class="info">
-<code class="code">find k t</code> is <code class="code">(v, t')</code>, where <code class="code">v</code> is the value bound to <code class="code">k</code>
-        and <code class="code">t'</code> is a map where the binding <code class="code">k <span class="keywordsign">-&gt;</span> v</code> has been promoted to
+<code class="code">find&nbsp;k&nbsp;t</code> is <code class="code">(v,&nbsp;t')</code>, where <code class="code">v</code> is the value bound to <code class="code">k</code>
+        and <code class="code">t'</code> is a map where the binding <code class="code">k&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;v</code> has been promoted to
         most-recently-used.
 </div>
 </td></tr>
 <tr><td><a href="Lru.M.S.html#VALfold">fold</a> [<a href="Lru.M.S.html">Lru.M.S</a>]</td>
 <td><div class="info">
-<code class="code">fold f z t</code> is <code class="code">f k0 v0 (... (f kn vn z))</code>.
+<code class="code">fold&nbsp;f&nbsp;z&nbsp;t</code> is <code class="code">f&nbsp;k0&nbsp;v0&nbsp;(...&nbsp;(f&nbsp;kn&nbsp;vn&nbsp;z))</code>.
 </div>
 </td></tr>
 <tr><td><a href="Lru.F.S.html#VALfold">fold</a> [<a href="Lru.F.S.html">Lru.F.S</a>]</td>
 <td><div class="info">
-<code class="code">fold f z t</code> is <code class="code">f k0 v0 (... (f kn vn z))</code>.
+<code class="code">fold&nbsp;f&nbsp;z&nbsp;t</code> is <code class="code">f&nbsp;k0&nbsp;v0&nbsp;(...&nbsp;(f&nbsp;kn&nbsp;vn&nbsp;z))</code>.
 </div>
 </td></tr>
 <tr><td align="left"><br>I</td></tr>
 <tr><td><a href="Lru.M.S.html#VALis_empty">is_empty</a> [<a href="Lru.M.S.html">Lru.M.S</a>]</td>
 <td><div class="info">
-<code class="code">is_empty t</code> is <code class="code"><span class="keyword">true</span></code> iff <code class="code">t</code> is empty.
+<code class="code">is_empty&nbsp;t</code> is <code class="code"><span class="keyword">true</span></code> iff <code class="code">t</code> is empty.
 </div>
 </td></tr>
 <tr><td><a href="Lru.F.S.html#VALis_empty">is_empty</a> [<a href="Lru.F.S.html">Lru.F.S</a>]</td>
 <td><div class="info">
-<code class="code">is_empty t</code> is <code class="code"><span class="keyword">true</span></code> iff <code class="code">t</code> is empty.
+<code class="code">is_empty&nbsp;t</code> is <code class="code"><span class="keyword">true</span></code> iff <code class="code">t</code> is empty.
 </div>
 </td></tr>
 <tr><td><a href="Lru.M.S.html#VALitems">items</a> [<a href="Lru.M.S.html">Lru.M.S</a>]</td>
 <td><div class="info">
-<code class="code">items t</code> is the number of bindings in <code class="code">t</code>.
+<code class="code">items&nbsp;t</code> is the number of bindings in <code class="code">t</code>.
 </div>
 </td></tr>
 <tr><td><a href="Lru.F.S.html#VALitems">items</a> [<a href="Lru.F.S.html">Lru.F.S</a>]</td>
 <td><div class="info">
-<code class="code">items t</code> is the number of bindings in <code class="code">t</code>.
+<code class="code">items&nbsp;t</code> is the number of bindings in <code class="code">t</code>.
 </div>
 </td></tr>
 <tr><td><a href="Lru.M.S.html#VALiter">iter</a> [<a href="Lru.M.S.html">Lru.M.S</a>]</td>
 <td><div class="info">
-<code class="code">iter f t</code> applies <code class="code">f</code> to all the bindings in <code class="code">t</code>.
+<code class="code">iter&nbsp;f&nbsp;t</code> applies <code class="code">f</code> to all the bindings in <code class="code">t</code>.
 </div>
 </td></tr>
 <tr><td><a href="Lru.F.S.html#VALiter">iter</a> [<a href="Lru.F.S.html">Lru.F.S</a>]</td>
 <td><div class="info">
-<code class="code">iter f t</code> applies <code class="code">f</code> to all the bindings in <code class="code">t</code> in key-increasing
+<code class="code">iter&nbsp;f&nbsp;t</code> applies <code class="code">f</code> to all the bindings in <code class="code">t</code> in key-increasing
         order
 </div>
 </td></tr>
 <tr><td align="left"><br>L</td></tr>
 <tr><td><a href="Lru.M.S.html#VALlru">lru</a> [<a href="Lru.M.S.html">Lru.M.S</a>]</td>
 <td><div class="info">
-<code class="code">lru t</code> is the least-recently-used binding in <code class="code">t</code>, or <code class="code"><span class="constructor">None</span></code>, when <code class="code">t</code>
+<code class="code">lru&nbsp;t</code> is the least-recently-used binding in <code class="code">t</code>, or <code class="code"><span class="constructor">None</span></code>, when <code class="code">t</code>
         is empty.
 </div>
 </td></tr>
 <tr><td><a href="Lru.F.S.html#VALlru">lru</a> [<a href="Lru.F.S.html">Lru.F.S</a>]</td>
 <td><div class="info">
-<code class="code">lru t</code> is the least-recently-used binding in <code class="code">t</code>, or <code class="code"><span class="constructor">None</span></code>, when <code class="code">t</code>
+<code class="code">lru&nbsp;t</code> is the least-recently-used binding in <code class="code">t</code>, or <code class="code"><span class="constructor">None</span></code>, when <code class="code">t</code>
         is empty.
 </div>
 </td></tr>
 <tr><td align="left"><br>M</td></tr>
 <tr><td><a href="Lru.M.S.html#VALmem">mem</a> [<a href="Lru.M.S.html">Lru.M.S</a>]</td>
 <td><div class="info">
-<code class="code">mem k t</code> is <code class="code"><span class="keyword">true</span></code> iff <code class="code">k</code> is bound in <code class="code">t</code>.
+<code class="code">mem&nbsp;k&nbsp;t</code> is <code class="code"><span class="keyword">true</span></code> iff <code class="code">k</code> is bound in <code class="code">t</code>.
 </div>
 </td></tr>
 <tr><td><a href="Lru.F.S.html#VALmem">mem</a> [<a href="Lru.F.S.html">Lru.F.S</a>]</td>
 <td><div class="info">
-<code class="code">mem k t</code> is <code class="code"><span class="keyword">true</span></code> iff <code class="code">k</code> is bound in <code class="code">t</code>.
+<code class="code">mem&nbsp;k&nbsp;t</code> is <code class="code"><span class="keyword">true</span></code> iff <code class="code">k</code> is bound in <code class="code">t</code>.
 </div>
 </td></tr>
 <tr><td align="left"><br>O</td></tr>
 <tr><td><a href="Lru.M.S.html#VALof_list">of_list</a> [<a href="Lru.M.S.html">Lru.M.S</a>]</td>
 <td><div class="info">
-<code class="code">of_list kvs</code> is a new map with the bindings from <code class="code">kvs</code>.
+<code class="code">of_list&nbsp;kvs</code> is a new map with the bindings from <code class="code">kvs</code>.
 </div>
 </td></tr>
 <tr><td><a href="Lru.F.S.html#VALof_list">of_list</a> [<a href="Lru.F.S.html">Lru.F.S</a>]</td>
 <td><div class="info">
-<code class="code">of_list kvs</code> is a map with the bindings from <code class="code">kvs</code>.
+<code class="code">of_list&nbsp;kvs</code> is a map with the bindings from <code class="code">kvs</code>.
 </div>
 </td></tr>
 <tr><td align="left"><br>P</td></tr>
 <tr><td><a href="Lru.F.S.html#VALpop_lru">pop_lru</a> [<a href="Lru.F.S.html">Lru.F.S</a>]</td>
 <td><div class="info">
-<code class="code">pop_lru t</code> is <code class="code">((k, v), t'</code>, where <code class="code">(k, v)</code> is <code class="code">lru t</code>, and <code class="code">t'</code> is <code class="code">t</code>
+<code class="code">pop_lru&nbsp;t</code> is <code class="code">((k,&nbsp;v),&nbsp;t'</code>, where <code class="code">(k,&nbsp;v)</code> is <code class="code">lru&nbsp;t</code>, and <code class="code">t'</code> is <code class="code">t</code>
         without that binding.
 </div>
 </td></tr>
 <tr><td><a href="Lru.M.S.html#VALpp">pp</a> [<a href="Lru.M.S.html">Lru.M.S</a>]</td>
 <td><div class="info">
-<code class="code">pp ~pp_size ~sep pp_kv ppf t</code> pretty-prints <code class="code">t</code> to <code class="code">ppf</code>, using <code class="code">pp_kv</code>
+<code class="code">pp&nbsp;~pp_size&nbsp;~sep&nbsp;pp_kv&nbsp;ppf&nbsp;t</code> pretty-prints <code class="code">t</code> to <code class="code">ppf</code>, using <code class="code">pp_kv</code>
         to print the bindings, <code class="code">~sep</code> to separate them, and <code class="code">~pp_size</code> to print
         the <a href="Lru.M.S.html#VALsize"><code class="code">size</code></a> and <a href="Lru.M.S.html#VALcapacity"><code class="code">capacity</code></a>.
 </div>
 </td></tr>
 <tr><td><a href="Lru.F.S.html#VALpp">pp</a> [<a href="Lru.F.S.html">Lru.F.S</a>]</td>
 <td><div class="info">
-<code class="code">pp ~pp_size ~sep pp_kv ppf t</code> pretty-prints <code class="code">t</code> to <code class="code">ppf</code>, using <code class="code">pp_kv</code>
+<code class="code">pp&nbsp;~pp_size&nbsp;~sep&nbsp;pp_kv&nbsp;ppf&nbsp;t</code> pretty-prints <code class="code">t</code> to <code class="code">ppf</code>, using <code class="code">pp_kv</code>
         to print the bindings, <code class="code">~sep</code> to separate them, and <code class="code">~pp_size</code> to print
         the <a href="Lru.F.S.html#VALsize"><code class="code">size</code></a> and <a href="Lru.F.S.html#VALcapacity"><code class="code">capacity</code></a>.
 </div>
@@ -185,60 +186,60 @@
 <tr><td align="left"><br>R</td></tr>
 <tr><td><a href="Lru.M.S.html#VALremove">remove</a> [<a href="Lru.M.S.html">Lru.M.S</a>]</td>
 <td><div class="info">
-<code class="code">remove k m</code> removes the binding for <code class="code">k</code>, if one exists.
+<code class="code">remove&nbsp;k&nbsp;m</code> removes the binding for <code class="code">k</code>, if one exists.
 </div>
 </td></tr>
 <tr><td><a href="Lru.F.S.html#VALremove">remove</a> [<a href="Lru.F.S.html">Lru.F.S</a>]</td>
 <td><div class="info">
-<code class="code">remove k t</code> is <code class="code">t</code> without the binding for <code class="code">k</code>, or <code class="code">t</code>, if <code class="code">k</code> is not
+<code class="code">remove&nbsp;k&nbsp;t</code> is <code class="code">t</code> without the binding for <code class="code">k</code>, or <code class="code">t</code>, if <code class="code">k</code> is not
         bound in <code class="code">t</code>.
 </div>
 </td></tr>
 <tr><td><a href="Lru.M.S.html#VALresize">resize</a> [<a href="Lru.M.S.html">Lru.M.S</a>]</td>
 <td><div class="info">
-<code class="code">resize cap t</code> will change the capacity of <code class="code">t</code> to <code class="code">cap</code>.
+<code class="code">resize&nbsp;cap&nbsp;t</code> will change the capacity of <code class="code">t</code> to <code class="code">cap</code>.
 </div>
 </td></tr>
 <tr><td><a href="Lru.F.S.html#VALresize">resize</a> [<a href="Lru.F.S.html">Lru.F.S</a>]</td>
 <td><div class="info">
-<code class="code">resize cap t</code> is a map with capacity <code class="code">cap</code>, holding the same bindings
+<code class="code">resize&nbsp;cap&nbsp;t</code> is a map with capacity <code class="code">cap</code>, holding the same bindings
         as <code class="code">t</code>.
 </div>
 </td></tr>
 <tr><td align="left"><br>S</td></tr>
 <tr><td><a href="Lru.M.S.html#VALsize">size</a> [<a href="Lru.M.S.html">Lru.M.S</a>]</td>
 <td><div class="info">
-<code class="code">size t</code> is the combined size of bindings in <code class="code">t</code>.
+<code class="code">size&nbsp;t</code> is the combined size of bindings in <code class="code">t</code>.
 </div>
 </td></tr>
 <tr><td><a href="Lru.F.S.html#VALsize">size</a> [<a href="Lru.F.S.html">Lru.F.S</a>]</td>
 <td><div class="info">
-<code class="code">size t</code> is the combined weight of bindings in <code class="code">t</code>.
+<code class="code">size&nbsp;t</code> is the combined weight of bindings in <code class="code">t</code>.
 </div>
 </td></tr>
 <tr><td align="left"><br>T</td></tr>
 <tr><td><a href="Lru.M.S.html#VALto_list">to_list</a> [<a href="Lru.M.S.html">Lru.M.S</a>]</td>
 <td><div class="info">
-<code class="code">to_list t</code> are the bindings in <code class="code">t</code>.
+<code class="code">to_list&nbsp;t</code> are the bindings in <code class="code">t</code>.
 </div>
 </td></tr>
 <tr><td><a href="Lru.F.S.html#VALto_list">to_list</a> [<a href="Lru.F.S.html">Lru.F.S</a>]</td>
 <td><div class="info">
-<code class="code">to_list t</code> are the bindings in <code class="code">t</code> in key-increasing order.
+<code class="code">to_list&nbsp;t</code> are the bindings in <code class="code">t</code> in key-increasing order.
 </div>
 </td></tr>
 <tr><td align="left"><br>U</td></tr>
 <tr><td><a href="Lru.F.S.html#VALunadd">unadd</a> [<a href="Lru.F.S.html">Lru.F.S</a>]</td>
 <td><div class="info">
-<code class="code">unadd k t</code> is <code class="code">(v, t')</code>, where <code class="code">v</code> is the value bound to <code class="code">k</code>, and <code class="code">t'</code>
-        is <code class="code">t</code> without the binding <code class="code">k <span class="keywordsign">-&gt;</span> t</code>, or <code class="code"><span class="constructor">None</span></code>, if <code class="code">k</code> is not bound in
+<code class="code">unadd&nbsp;k&nbsp;t</code> is <code class="code">(v,&nbsp;t')</code>, where <code class="code">v</code> is the value bound to <code class="code">k</code>, and <code class="code">t'</code>
+        is <code class="code">t</code> without the binding <code class="code">k&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t</code>, or <code class="code"><span class="constructor">None</span></code>, if <code class="code">k</code> is not bound in
         <code class="code">t</code>.
 </div>
 </td></tr>
 <tr><td align="left"><br>W</td></tr>
 <tr><td><a href="Lru.Weighted.html#VALweight">weight</a> [<a href="Lru.Weighted.html">Lru.Weighted</a>]</td>
 <td><div class="info">
-<code class="code">weight t</code> is a measure of <code class="code">t</code>s contribution towards the total map
+<code class="code">weight&nbsp;t</code> is a measure of <code class="code">t</code>s contribution towards the total map
       capacity.
 </div>
 </td></tr>
