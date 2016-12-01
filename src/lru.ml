@@ -208,7 +208,6 @@ module M = struct
     val add : k -> v -> t -> unit
     val remove : k -> t -> unit
     type dir = [ `Up | `Down ]
-    val cache : t -> (k -> v) -> k -> v
     val lru : t -> (k * v) option
     val drop_lru : t -> unit
     val fold : ?dir:dir -> (k -> v -> 'a -> 'a) -> 'a -> t -> 'a
@@ -284,10 +283,6 @@ module M = struct
 
     let mem k t = HT.mem t.ht k
 
-    let cache t f k = match find k t with
-      | Some v -> v
-      | None   -> let v = f k in add k v t; v
-
     type dir = [ `Up | `Down ]
 
     let iter ?dir f t = Q.iter ?dir (fun (k, v) -> f k v) t.q
@@ -332,3 +327,14 @@ end
     Bake (Hashtbl.MakeSeeded (K)) (V)
 
 end
+
+let memo (type k) (type v)
+    ?(hashed=(Hashtbl.hash, (=))) ?(weight = fun _ -> 1) ~cap f =
+  let module C =
+    M.Make (struct type t = k let hash = fst hashed let equal = snd hashed end)
+           (struct type t = v let weight = weight end) in
+    let c = C.create cap in
+    let rec g k = match C.find k c with
+      | None   -> let v = f g k in C.add k v c; v
+      | Some v -> v in
+    g

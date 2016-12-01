@@ -219,9 +219,6 @@ module M : sig
     val remove : k -> t -> unit
     (** [remove k m] removes the binding for [k], if one exists. *)
 
-    val cache : t -> (k -> v) -> k -> v
-    (** [cache t f] caches the results of [f] in [t]. *)
-
     (** {1 Access to least-recently-used bindings} *)
 
     val lru : t -> (k * v) option
@@ -288,4 +285,22 @@ module M : sig
   (** [MakeSeeded(K)(V)] is a variant backed by {!Hashtbl.SeededS}. *)
   module MakeSeeded (K: Hashtbl.SeededHashedType) (V: Weighted):
     S with type k = K.t and type v = V.t
+
 end
+
+(** {1 One-off memoization} *)
+
+val memo : ?hashed:(('a -> int) * ('a -> 'a -> bool)) -> ?weight:('b -> int) ->
+           cap:int -> (('a -> 'b) -> 'a -> 'b) -> 'a -> 'b
+(** [memo ?hashed ?weight ~cap f] is a new memoized instance of [f], using LRU
+    caching. [f] is an open recursive function of one parameter.
+
+    [~hashed] are hashing and equality over the arguments ['a]. It defaults to
+    [(Hashtbl.hash, Pervasives.(=))].
+
+    [~weight] is the weighting function over the results ['b]. It defaults to
+    [fun _ -> 1].
+
+    [~cap] is the total cache capacity.
+
+    @raise Invalid_argument when [cap < 1]. *)

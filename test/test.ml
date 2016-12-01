@@ -80,6 +80,10 @@ let replaces { mk; size; add; remove; _ } () =
   let mp = List.fold_left (fun m k -> add k (13 * k) m) mp ns1 in
   check int "size after replace" 100 (size mp)
 
+let memo () =
+  let fib f = function 0|1 as n -> n | n -> f (n - 1) + f (n - 2) in
+  Lru.memo ~cap:2 fib 300 |> ignore (* It's about the time. *)
+
 
 let () = Random.self_init ()
 
@@ -93,5 +97,6 @@ let () = run "lru" [
     "add/remove", `Quick, remembers ops_m;
     "lru order",  `Quick, lru ops_m;
     "replaces",   `Quick, replaces ops_m;
+    "memo",       `Quick, memo;
   ] ;
 ]
