@@ -1,12 +1,14 @@
 (* Copyright (c) 2015-2016 David Kaloper Meršinjak. All rights reserved.
    See LICENSE.md *)
 
-module type Ordered = sig type t val compare : t -> t -> int end
 module type Weighted = sig type t val weight : t -> int end
 
 type 'a fmt = Format.formatter -> 'a -> unit
 
 let invalid_arg fmt = Format.ksprintf invalid_arg fmt
+
+let cap_makes_sense ~m ~f cap =
+  if cap < 1 then invalid_arg "Lru.%s.%s: ~cap:%d" m f cap
 
 module F = struct
 
@@ -36,7 +38,7 @@ module F = struct
     val pp_dump : (k * v) fmt -> t fmt
   end
 
-  module Make (K: Ordered) (V: Weighted) = struct
+  module Make (K: Map.OrderedType) (V: Weighted) = struct
 
     module Q = Psq.Make (K) (struct
       type t = int * V.t
@@ -55,11 +57,10 @@ module F = struct
     let size t = t.w
     let capacity t = t.cap
 
-    let cap_makes_sense caller cap =
-      if cap < 1 then invalid_arg "Lru.F.%s: given capacity %d" caller cap
+    let cap_makes_sense = cap_makes_sense ~m:"F"
 
     let empty cap =
-      cap_makes_sense "empty" cap; { cap; w = 0; gen = g0; q = Q.empty }
+      cap_makes_sense ~f:"empty" cap; { cap; w = 0; gen = g0; q = Q.empty }
 
     let mem k t = Q.mem k t.q
 
@@ -71,7 +72,7 @@ module F = struct
         else { t with w; q } in
       if t.w > t.cap then go t t.w t.q else t
 
-    let resize cap t = cap_makes_sense "resize" cap; trim { t with cap }
+    let resize cap t = cap_makes_sense ~f:"resize" cap; trim { t with cap }
 
     let remove k t = match Q.find k t.q with
       | None -> t
@@ -238,10 +239,10 @@ module M = struct
 
     let is_empty t = HT.length t.ht = 0
 
-    let err_capacity = invalid_arg "Lru.M.%s: given capacity %d"
+    let cap_makes_sense = cap_makes_sense ~m:"M"
 
     let create ?random cap =
-      if cap < 1 then err_capacity "create" cap;
+      cap_makes_sense ~f:"create" cap;
       { cap; w = 0; ht = HT.create ?random cap; q = Q.create () }
 
     let lru t = match t.q.Q.first with
@@ -257,9 +258,7 @@ module M = struct
 
     let rec trim t = if size t > t.cap then (drop_lru t; trim t)
 
-    let resize cap t =
-      if cap < 1 then err_capacity "resize" cap;
-      t.cap <- cap; trim t
+    let resize cap t = cap_makes_sense ~f:"resize" cap; t.cap <- cap; trim t
 
     let remove k t =
       try
@@ -314,13 +313,13 @@ module M = struct
       let sep ppf () = Format.fprintf ppf ",@ " in
       Format.fprintf ppf "{@[size: %d/%d;@ MRU: %a@]}"
         t.w t.cap (pp_q sep pp) t
-end
+  end
 
   module SeededHash (H: Hashtbl.HashedType) = struct
     include H let hash _ x = hash x
   end
 
-  module Make (K : Hashtbl.HashedType) (V: Weighted) =
+  module Make (K: Hashtbl.HashedType) (V: Weighted) =
     Bake (Hashtbl.MakeSeeded (SeededHash (K))) (V)
 
   module MakeSeeded (K : Hashtbl.SeededHashedType) (V: Weighted) =

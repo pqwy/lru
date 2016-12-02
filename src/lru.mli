@@ -23,14 +23,6 @@
 
 (** {1 Lru} *)
 
-
-(** Signature of ordered types. *)
-module type Ordered = sig
-  type t val
-  compare : t -> t -> int
-  (** [compare] is a total order on {{!t}[t]}. *)
-end
-
 (** Signature of types with measurable weight. *)
 module type Weighted = sig
   type t
@@ -57,7 +49,9 @@ module F : sig
     (** Values in {{!t}[t]}. *)
 
     val empty : int -> t
-    (** [empty cap] is an empty map with capacity [cap]. *)
+    (** [empty cap] is an empty map with capacity [cap].
+
+        @raise Invalid_argument when [cap < 1]. *)
 
     val is_empty : t -> bool
     (** [is_empty t] is [true] iff [t] is empty. *)
@@ -75,7 +69,9 @@ module F : sig
     val resize : int -> t -> t
     (** [resize cap t] is a map with capacity [cap], holding the same bindings
         as [t]. When the {{!size}[size]} of [t] is greater than [cap],
-        least-recently-used bindings are discarded to fit [cap]. *)
+        least-recently-used bindings are discarded to fit [cap].
+
+        @raise Invalid_argument when [cap < 1]. *)
 
     (** {1 Access by [k]} *)
 
@@ -158,7 +154,7 @@ module F : sig
 
   (** [Make(K)(V)] is the {{!S}LRU map} with bindings [K.t -> V.t]. The weight
       of an individual binding is the {!Weighted.weight} of [V.t]. *)
-  module Make (K: Ordered) (V: Weighted):
+  module Make (K: Map.OrderedType) (V: Weighted):
     S with type k = K.t and type v = V.t
 end
 
@@ -181,8 +177,10 @@ module M : sig
     val create : ?random:bool -> int -> t
     (** [create ?random cap] is a new map with capacity [cap].
 
-        [~random] randomizes the underlying hash table, and defaults to [false].
-        See {!Hashtbl.create}. *)
+        [~random] randomizes the underlying hash table. It defaults to [false].
+        See {!Hashtbl.create}.
+
+        @raise Invalid_argument when [cap < 1]. *)
 
     val is_empty : t -> bool
     (** [is_empty t] is [true] iff [t] is empty. *)
@@ -200,7 +198,9 @@ module M : sig
     val resize : int -> t -> unit
     (** [resize cap t] will change the capacity of [t] to [cap]. If the current
         {{!size}[size]} is greater than [cap], least-recently-used elements are
-        discarded to fit [cap]. *)
+        discarded to fit [cap].
+
+        @raise Invalid_argument when [cap < 1]. *)
 
     (** {1 Access by [k]} *)
 
