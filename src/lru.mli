@@ -211,6 +211,10 @@ module M : sig
     (** [find k t] is the [v] bound to [k]. The binding [k -> v] is promoted to
         most-recently-used. When [k] is not bound in [t], the result is [None].  *)
 
+    val peek : k -> t -> v option
+    (** [peek k t] is the [v] bound to [k]. No promotion is done. When [k] is
+        not bound in [t], the result is [None].  *)
+
     val add : k -> v -> t -> unit
     (** [add k v t] adds the binding [k -> v]. If [k] is alread bound, the old
         binding is replaced. In either case, the binding [k -> v] becomes the
