@@ -205,6 +205,7 @@ module M = struct
     val resize : int -> t -> unit
     val mem : k -> t -> bool
     val find : k -> t -> v option
+    val peek : k -> t -> v option
     val add : k -> v -> t -> unit
     val remove : k -> t -> unit
     type dir = [ `Up | `Down ]
@@ -279,6 +280,12 @@ module M = struct
       try
         let n = HT.find t.ht k in
         Q.( detach t.q n; append t.q n );
+        Some (snd n.Q.value)
+      with Not_found -> None
+
+    let peek k t =
+      try
+        let n = HT.find t.ht k in
         Some (snd n.Q.value)
       with Not_found -> None
 
