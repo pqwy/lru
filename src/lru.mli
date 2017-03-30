@@ -51,7 +51,7 @@ module F : sig
     val empty : int -> t
     (** [empty cap] is an empty map with capacity [cap].
 
-        @raise Invalid_argument when [cap < 1]. *)
+        @raise Invalid_argument when [cap < 0]. *)
 
     val is_empty : t -> bool
     (** [is_empty t] is [true] iff [t] is empty. *)
@@ -66,27 +66,36 @@ module F : sig
     (** [capacity t] is the maximum combined weight of bindings this map will
         hold before they start being discarded in least-recently-used order. *)
 
-    val resize : int -> t -> t
-    (** [resize cap t] is a map with capacity [cap], holding the same bindings
-        as [t]. When the {{!size}[size]} of [t] is greater than [cap],
-        least-recently-used bindings are discarded to fit [cap].
+    val trim : t -> t
+    (** [trim t] is the map [t'], that contains as many most-recently-used
+        bindings in [t] as its capacity permits ([size t' <= capacity t']).
+        If [t] is over capacity, bindings are discarded in least-recently-used
+        order. Otherwise, [t' == t]. *)
 
-        @raise Invalid_argument when [cap < 1]. *)
+    val resize : int -> t -> t
+    (** [resize cap t] a map with exactly the bindings in [t], but the capacity
+        set to [cap].
+
+        @raise Invalid_argument when [cap < 0]. *)
 
     (** {1 Access by [k]} *)
 
     val mem : k -> t -> bool
     (** [mem k t] is [true] iff [k] is bound in [t]. *)
 
-    val find : k -> t -> (v * t) option
-    (** [find k t] is [(v, t')], where [v] is the value bound to [k]
-        and [t'] is a map where the binding [k -> v] has been promoted to
-        most-recently-used. When [k] is not bound in [t], the result in [None]. *)
+    val find : ?promote:bool -> k -> t -> (v * t) option
+    (** [find k t] is [(v, t')], where [v] is the value bound to [k].
 
-    val add : k -> v -> t -> t
-    (** [add k v t] is [t] with the binding [k -> v]. If [k] is alread bound in
-        [t], the old binding is replaced. In either case, the binding [k -> v]
-        is the most-recently-used. *)
+        When [promote] is [true], [t'] is [t] with the binding [k -> v] promoted
+        to most-recently-used. Otherwise, [t' == t]. It defaults to [true]. *)
+
+    val add : ?trim:bool -> k -> v -> t -> t
+    (** [add k v t] is [t] with the binding [k -> v]. If [k] is already
+        bound in [t], the old binding is replaced. The binding [k -> v] is the
+        most-recently-used.
+
+        When [trim] is [true], [add] {{!trim}[trim]}s the resulting map,
+        ensuring it is not over capacity. It defaults to [true]. *)
 
     val remove : k -> t -> t
     (** [remove k t] is [t] without the binding for [k], or [t], if [k] is not
@@ -118,22 +127,23 @@ module F : sig
         key-increasing order. *)
 
     val iter : (k -> v -> unit) -> t -> unit
-    (** [iter f t] applies [f] to all the bindings in [t] in key-increasing
-        order *)
+    (** [iter f t] applies [f] to all the bindings in [t] in key-increasing order *)
 
     (** {1 Conversions} *)
 
     val to_list : t -> (k * v) list
     (** [to_list t] are the bindings in [t] in key-increasing order. *)
 
-    val of_list : ?cap:int -> (k * v) list -> t
-    (** [of_list kvs] is a map with the bindings from [kvs]. If there are
-        multiple bindings for the same [k], it is unspecified which one is
-        chosen.
+    val of_list : (k * v) list -> t
+    (** [of_list kvs] is a map with bindings from [kvs]. Its size and capacity
+        are the total weight of its bindings.
 
-        [~cap] is the capacity of the new map. It defaults to the total weight
-        of bindings in [kvs]. If given, and smaller than then total weight of
-        [v]s, bindings are discarded from the left of the list. *)
+        With respect to duplicates and the recently-used order, it behaves as if
+        the bindings were added sequentially in the list order.
+
+{[w = size (of_list kvs)
+
+of_list kvs = List.fold_left (fun m (k, v) -> add k v m) (empty w) kvs]} *)
 
     open Format
 
@@ -180,7 +190,7 @@ module M : sig
         [~random] randomizes the underlying hash table. It defaults to [false].
         See {!Hashtbl.create}.
 
-        @raise Invalid_argument when [cap < 1]. *)
+        @raise Invalid_argument when [cap < 0]. *)
 
     val is_empty : t -> bool
     (** [is_empty t] is [true] iff [t] is empty. *)
@@ -189,32 +199,41 @@ module M : sig
     (** [items t] is the number of bindings in [t]. *)
 
     val size : t -> int
-    (** [size t] is the combined size of bindings in [t]. *)
+    (** [size t] is the combined weight of bindings in [t]. *)
 
     val capacity : t -> int
     (** [capacity t] is the maximum combined weight of bindings this map will
         hold before they start being discarded in least-recently-used order. *)
 
-    val resize : int -> t -> unit
-    (** [resize cap t] will change the capacity of [t] to [cap]. If the current
-        {{!size}[size]} is greater than [cap], least-recently-used elements are
-        discarded to fit [cap].
+    val trim : t -> unit
+    (** [trim t] discards bindings from [t], if needed, until
+        [size t <= capacity t]. The bindings are discarded in
+        least-recently-used order. *)
 
-        @raise Invalid_argument when [cap < 1]. *)
+    val resize : int -> t -> unit
+    (** [resize cap t] changes the capacity of [t] to [cap], while leavind the
+        bindings unchanged.
+
+        @raise Invalid_argument when [cap < 0]. *)
 
     (** {1 Access by [k]} *)
 
     val mem : k -> t -> bool
     (** [mem k t] is [true] iff [k] is bound in [t]. *)
 
-    val find : k -> t -> v option
-    (** [find k t] is the [v] bound to [k]. The binding [k -> v] is promoted to
-        most-recently-used. When [k] is not bound in [t], the result is [None].  *)
+    val find : ?promote:bool -> k -> t -> v option
+    (** [find k t] is the [v] bound to [k]. When [k] is not bound in
+        [t], the result is [None].
 
-    val add : k -> v -> t -> unit
-    (** [add k v t] adds the binding [k -> v]. If [k] is alread bound, the old
-        binding is replaced. In either case, the binding [k -> v] becomes the
-        most-recently used. *)
+        If [promote] is [true], the binding [k -> v] is promoted to
+        most-recently-used. It defaults to [true]. *)
+
+    val add : ?trim:bool -> k -> v -> t -> unit
+    (** [add k v t] adds the binding [k -> v] to [t]. If [k] is alread bound, the
+        old binding is replaced. The binding [k -> v] becomes most-recently-used.
+
+        If [trim] is [true], [add] {{!trim}[trim]}s the resulting map, ensuring
+        it is not over capacity. It defaults to [true]. *)
 
     val remove : k -> t -> unit
     (** [remove k m] removes the binding for [k], if one exists. *)
@@ -239,12 +258,14 @@ module M : sig
     (** {1 Aggregate access} *)
 
     val fold : ?dir:dir -> (k -> v -> 'a -> 'a) -> 'a -> t -> 'a
-    (** [fold f z t] is [f k0 v0 (... (f kn vn z))]. [~dir] controls the order
-        of folding, defaults to [`Up]. *)
+    (** [fold f z t] is [f k0 v0 (... (f kn vn z))].
+
+        [~dir] controls the order of folding. Defaults to [`Up]. *)
 
     val iter : ?dir:dir -> (k -> v -> unit) -> t -> unit
-    (** [iter f t] applies [f] to all the bindings in [t]. [~dir] controls the
-        order of application, defaults to [`Up]. *)
+    (** [iter f t] applies [f] to all the bindings in [t].
+
+        [~dir] controls the order of application. Defaults to [`Up]. *)
 
     (** {1 Conversions} *)
 
@@ -252,13 +273,12 @@ module M : sig
     (** [to_list t] are the bindings in [t]. [~dir] controls the order, defaults
         to [`Up]. *)
 
-    val of_list : ?cap:int -> (k * v) list -> t
-    (** [of_list kvs] is a new map with the bindings from [kvs]. If there are
-        multiple bindings for [k], the right-most is chosen.
+    val of_list : (k * v) list -> t
+    (** [of_list kvs] is a map with the bindings from [kvs]. Its size and
+        capacity are the total weight of its bindings.
 
-        [~cap] is the capacity of the new map. It defaults to the total weight of
-        bindings in [kvs]. If given, and smaller than total weight of [v]s,
-        bindings are discarded from the left of the list. *)
+        With respect to duplicates and the recently-used order, it behaves as if
+        the bindings were added sequentially in the list order. *)
 
     open Format
 
@@ -303,4 +323,4 @@ val memo : ?hashed:(('a -> int) * ('a -> 'a -> bool)) -> ?weight:('b -> int) ->
 
     [~cap] is the total cache capacity.
 
-    @raise Invalid_argument when [cap < 1]. *)
+    @raise Invalid_argument when [cap < 0]. *)

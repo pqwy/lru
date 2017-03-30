@@ -8,7 +8,7 @@ type 'a fmt = Format.formatter -> 'a -> unit
 let invalid_arg fmt = Format.ksprintf invalid_arg fmt
 
 let cap_makes_sense ~m ~f cap =
-  if cap < 1 then invalid_arg "Lru.%s.%s: ~cap:%d" m f cap
+  if cap < 0 then invalid_arg "Lru.%s.%s: ~cap:%d" m f cap
 
 module F = struct
 
@@ -21,10 +21,11 @@ module F = struct
     val items : t -> int
     val size : t -> int
     val capacity : t -> int
+    val trim : t -> t
     val resize : int -> t -> t
     val mem : k -> t -> bool
-    val find : k -> t -> (v * t) option
-    val add : k -> v -> t -> t
+    val find : ?promote:bool -> k -> t -> (v * t) option
+    val add : ?trim:bool -> k -> v -> t -> t
     val remove : k -> t -> t
     val unadd : k -> t -> (v * t) option
     val lru : t -> (k * v) option
@@ -33,7 +34,7 @@ module F = struct
     val fold : (k -> v -> 'a -> 'a) -> 'a -> t -> 'a
     val iter : (k -> v -> unit) -> t -> unit
     val to_list : t -> (k * v) list
-    val of_list : ?cap:int -> (k * v) list -> t
+    val of_list : (k * v) list -> t
     val pp : ?pp_size:(int * int) fmt -> ?sep:unit fmt -> (k * v) fmt -> t fmt
     val pp_dump : (k * v) fmt -> t fmt
   end
@@ -72,7 +73,9 @@ module F = struct
         else { t with w; q } in
       if t.w > t.cap then go t t.w t.q else t
 
-    let resize cap t = cap_makes_sense ~f:"resize" cap; trim { t with cap }
+    let trimq cond t = if cond then trim t else t
+
+    let resize cap t = cap_makes_sense ~f:"resize" cap; { t with cap }
 
     let remove k t = match Q.find k t.q with
       | None -> t
@@ -83,24 +86,26 @@ module F = struct
       | Some (_, v) ->
           Some (v, { t with w = t.w - V.weight v; q = Q.remove k t.q })
 
-    let rec add k v t =
+    let rec add ?(trim=true) k v t =
       if t.gen < max_int then
         let p   = (t.gen, v)
         and w   = t.w + V.weight v
         and gen = t.gen + 1 in
-        trim @@ match Q.find k t.q with
+        trimq trim @@ match Q.find k t.q with
         | None -> { t with gen; w; q = Q.add k p t.q }
         | Some (_, v0) ->
             { t with gen; w = w - V.weight v0; q = Q.adjust (fun _ -> p) k t.q }
-      else add k v (empty t.cap)
+      else add ~trim k v (empty t.cap)
 
-    let find k ({ gen; _ } as t) =
-      let r = ref None in
-      let q = Q.adjust (fun (_, v) -> r := Some v; (gen, v)) k t.q in
-      match !r with
-      | Some v when gen < max_int -> Some (v, { t with gen = gen + 1; q })
-      | Some v -> Some (v, add k v (empty t.cap))
-      | None -> None
+    let find ?(promote=true) k ({ gen; _ } as t) =
+      if promote then
+        let r = ref None in
+        let q = Q.adjust (fun (_, v) -> r := Some v; (gen, v)) k t.q in
+        match !r with
+        | Some v when gen < max_int -> Some (v, { t with gen = gen + 1; q })
+        | Some v -> Some (v, add k v (empty t.cap))
+        | None -> None
+      else match Q.find k t.q with Some (_, v) -> Some (v, t) | _ -> None
 
     let lru t = match Q.min t.q with Some (k, (_, v)) -> Some (k, v) | _ -> None
 
@@ -117,16 +122,14 @@ module F = struct
 
     let iter f t = Q.iter (fun k (_, v) -> f k v) t.q
 
-    let list_w = List.fold_left (fun w (_, v) -> w + V.weight v) 0
-
-    let of_list ?cap xs =
-      let cap = match cap with Some x -> x | _ -> list_w xs in
-      let rec annotate g w acc = function
-        | []         -> (g, w, acc)
-        | (k, v)::xs ->
-            annotate (succ g) (w + V.weight v) ((k, (g, v))::acc) xs in
-      let (gen, w, kgvs) = annotate g0 0 [] xs in
-      trim { cap; w; gen; q = Q.of_list kgvs }
+    let of_list xs =
+      let rec annotate g acc = function
+        | (k, v)::xs -> annotate (succ g) ((k, (g, v))::acc) xs
+        | []         -> (g, acc) in
+      let (gen, kgvs) = annotate g0 [] xs in
+      let q = Q.of_list kgvs in
+      let w = Q.fold (fun _ (_, v) w -> w + V.weight v) 0 q in
+      { cap = w; w; gen; q }
 
     let to_list t = Q.fold (fun k (_, v) kvs -> (k, v) :: kvs) [] t.q
 
@@ -203,10 +206,11 @@ module M = struct
     val items : t -> int
     val size : t -> int
     val capacity : t -> int
+    val trim : t -> unit
     val resize : int -> t -> unit
     val mem : k -> t -> bool
-    val find : k -> t -> v option
-    val add : k -> v -> t -> unit
+    val find : ?promote:bool -> k -> t -> v option
+    val add : ?trim:bool -> k -> v -> t -> unit
     val remove : k -> t -> unit
     type dir = [ `Up | `Down ]
     val lru : t -> (k * v) option
@@ -214,7 +218,7 @@ module M = struct
     val fold : ?dir:dir -> (k -> v -> 'a -> 'a) -> 'a -> t -> 'a
     val iter : ?dir:dir -> (k -> v -> unit) -> t -> unit
     val to_list : ?dir:dir -> t -> (k * v) list
-    val of_list : ?cap:int -> (k * v) list -> t
+    val of_list : (k * v) list -> t
     val pp : ?pp_size:(int * int) fmt -> ?sep:unit fmt -> (k * v) fmt -> t fmt
     val pp_dump : (k * v) fmt -> t fmt
   end
@@ -258,7 +262,7 @@ module M = struct
 
     let rec trim t = if size t > t.cap then (drop_lru t; trim t)
 
-    let resize cap t = cap_makes_sense ~f:"resize" cap; t.cap <- cap; trim t
+    let resize cap t = cap_makes_sense ~f:"resize" cap; t.cap <- cap
 
     let remove k t =
       try
@@ -267,16 +271,17 @@ module M = struct
         HT.remove t.ht k; Q.detach t.q n
       with Not_found -> ()
 
-    let add k v t =
+    let add ?trim:(cond=true) k v t =
       remove k t;
       let n = Q.node (k, v) in
       t.w <- t.w + V.weight v;
-      HT.add t.ht k n; Q.append t.q n; trim t
+      HT.add t.ht k n; Q.append t.q n;
+      if cond then trim t
 
-    let find k t =
+    let find ?(promote=true) k t =
       try
         let n = HT.find t.ht k in
-        Q.( detach t.q n; append t.q n );
+        if promote then Q.( detach t.q n; append t.q n );
         Some (snd n.Q.value)
       with Not_found -> None
 
@@ -290,11 +295,11 @@ module M = struct
 
     let to_list ?dir t = Q.fold ?dir (fun x xs -> x::xs) [] t.q
 
-    let list_w = List.fold_left (fun w (_, v) -> w + V.weight v) 0
-
-    let of_list ?cap xs =
-      let cap = match cap with Some x -> x | _ -> list_w xs in
-      let t = create cap in List.iter (fun (k, v) -> add k v t) xs; t
+    let of_list xs =
+      let t = create 0 in
+      List.iter (fun (k, v) -> add ~trim:false k v t) xs;
+      resize (Q.fold (fun (_, v) w -> w + V.weight v) 0 t.q) t;
+      t
 
     let pp_q sep pp ppf t =
       let fst = ref true in
