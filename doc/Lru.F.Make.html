@@ -23,7 +23,7 @@
 &nbsp;</div>
 <h1>Functor <a href="type_Lru.F.Make.html">Lru.F.Make</a></h1>
 
-<pre><span class="keyword">module</span> Make: <div class="sig_block"><code class="code"><span class="keyword">functor</span>&nbsp;(</code><code class="code"><span class="constructor">K</span></code><code class="code">&nbsp;:&nbsp;</code><code class="type"><a href="Lru.Ordered.html">Lru.Ordered</a></code><code class="code">)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;</code><div class="sig_block"><code class="code"><span class="keyword">functor</span>&nbsp;(</code><code class="code"><span class="constructor">V</span></code><code class="code">&nbsp;:&nbsp;</code><code class="type"><a href="Lru.Weighted.html">Lru.Weighted</a></code><code class="code">)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;</code><code class="type"><a href="Lru.F.S.html">S</a></code><code class="type">  with type k = K.t and type v = V.t</code></div></div></pre><div class="info module top">
+<pre><span class="keyword">module</span> Make: <div class="sig_block"><code class="code"><span class="keyword">functor</span>&nbsp;(</code><code class="code"><span class="constructor">K</span></code><code class="code">&nbsp;:&nbsp;</code><code class="type">Map.OrderedType</code><code class="code">)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;</code><div class="sig_block"><code class="code"><span class="keyword">functor</span>&nbsp;(</code><code class="code"><span class="constructor">V</span></code><code class="code">&nbsp;:&nbsp;</code><code class="type"><a href="Lru.Weighted.html">Lru.Weighted</a></code><code class="code">)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;</code><code class="type"><a href="Lru.F.S.html">S</a></code><code class="type">  with type k = K.t and type v = V.t</code></div></div></pre><div class="info module top">
 <code class="code"><span class="constructor">Make</span>(<span class="constructor">K</span>)(<span class="constructor">V</span>)</code> is the <a href="Lru.F.S.html">LRU map</a> with bindings <code class="code"><span class="constructor">K</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">V</span>.t</code>. The weight
       of an individual binding is the <a href="Lru.Weighted.html#VALweight"><code class="code"><span class="constructor">Lru</span>.<span class="constructor">Weighted</span>.weight</code></a> of <code class="code"><span class="constructor">V</span>.t</code>.<br>
 </div>
@@ -36,7 +36,7 @@
 <td align="center" valign="top" width="15%">
 <code>K</code></td>
 <td align="center" valign="top">:</td>
-<td><code class="type"><a href="Lru.Ordered.html">Lru.Ordered</a></code>
+<td><code class="type">Map.OrderedType</code>
 <tr>
 <td align="center" valign="top" width="15%">
 <code>V</code></td>
@@ -70,6 +70,7 @@ Values in <a href="Lru.F.S.html#TYPEt"><code class="code">t</code></a>.<br>
 
 <pre><span id="VALempty"><span class="keyword">val</span> empty</span> : <code class="type">int -> <a href="Lru.F.S.html#TYPEt">t</a></code></pre><div class="info ">
 <code class="code">empty&nbsp;cap</code> is an empty map with capacity <code class="code">cap</code>.<br>
+<b>Raises</b> <code>Invalid_argument</code> when <code class="code">cap&nbsp;&lt;&nbsp;0</code>.<br>
 </div>
 
 <pre><span id="VALis_empty"><span class="keyword">val</span> is_empty</span> : <code class="type"><a href="Lru.F.S.html#TYPEt">t</a> -> bool</code></pre><div class="info ">
@@ -89,10 +90,17 @@ Values in <a href="Lru.F.S.html#TYPEt"><code class="code">t</code></a>.<br>
         hold before they start being discarded in least-recently-used order.<br>
 </div>
 
+<pre><span id="VALtrim"><span class="keyword">val</span> trim</span> : <code class="type"><a href="Lru.F.S.html#TYPEt">t</a> -> <a href="Lru.F.S.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">trim&nbsp;t</code> is the map <code class="code">t'</code>, that contains as many most-recently-used
+        bindings in <code class="code">t</code> as its capacity permits (<code class="code">size&nbsp;t'&nbsp;&lt;=&nbsp;capacity&nbsp;t'</code>).
+        If <code class="code">t</code> is over capacity, bindings are discarded in least-recently-used
+        order. Otherwise, <code class="code">t'&nbsp;==&nbsp;t</code>.<br>
+</div>
+
 <pre><span id="VALresize"><span class="keyword">val</span> resize</span> : <code class="type">int -> <a href="Lru.F.S.html#TYPEt">t</a> -> <a href="Lru.F.S.html#TYPEt">t</a></code></pre><div class="info ">
-<code class="code">resize&nbsp;cap&nbsp;t</code> is a map with capacity <code class="code">cap</code>, holding the same bindings
-        as <code class="code">t</code>. When the <a href="Lru.F.S.html#VALsize"><code class="code">size</code></a> of <code class="code">t</code> is greater than <code class="code">cap</code>,
-        least-recently-used bindings are discarded to fit <code class="code">cap</code>.<br>
+<code class="code">resize&nbsp;cap&nbsp;t</code> a map with exactly the bindings in <code class="code">t</code>, but the capacity
+        set to <code class="code">cap</code>.<br>
+<b>Raises</b> <code>Invalid_argument</code> when <code class="code">cap&nbsp;&lt;&nbsp;0</code>.<br>
 </div>
 <br>
 <h1 id="1_Accessbyk">Access by <code class="code">k</code></h1><br>
@@ -101,16 +109,22 @@ Values in <a href="Lru.F.S.html#TYPEt"><code class="code">t</code></a>.<br>
 <code class="code">mem&nbsp;k&nbsp;t</code> is <code class="code"><span class="keyword">true</span></code> iff <code class="code">k</code> is bound in <code class="code">t</code>.<br>
 </div>
 
-<pre><span id="VALfind"><span class="keyword">val</span> find</span> : <code class="type"><a href="Lru.F.S.html#TYPEk">k</a> -> <a href="Lru.F.S.html#TYPEt">t</a> -> (<a href="Lru.F.S.html#TYPEv">v</a> * <a href="Lru.F.S.html#TYPEt">t</a>) option</code></pre><div class="info ">
-<code class="code">find&nbsp;k&nbsp;t</code> is <code class="code">(v,&nbsp;t')</code>, where <code class="code">v</code> is the value bound to <code class="code">k</code>
-        and <code class="code">t'</code> is a map where the binding <code class="code">k&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;v</code> has been promoted to
-        most-recently-used. When <code class="code">k</code> is not bound in <code class="code">t</code>, the result in <code class="code"><span class="constructor">None</span></code>.<br>
+<pre><span id="VALfind"><span class="keyword">val</span> find</span> : <code class="type">?promote:bool -> <a href="Lru.F.S.html#TYPEk">k</a> -> <a href="Lru.F.S.html#TYPEt">t</a> -> (<a href="Lru.F.S.html#TYPEv">v</a> * <a href="Lru.F.S.html#TYPEt">t</a>) option</code></pre><div class="info ">
+<code class="code">find&nbsp;k&nbsp;t</code> is <code class="code">(v,&nbsp;t')</code>, where <code class="code">v</code> is the value bound to <code class="code">k</code>.
+<p>
+
+        When <code class="code">promote</code> is <code class="code"><span class="keyword">true</span></code>, <code class="code">t'</code> is <code class="code">t</code> with the binding <code class="code">k&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;v</code> promoted
+        to most-recently-used. Otherwise, <code class="code">t'&nbsp;==&nbsp;t</code>. It defaults to <code class="code"><span class="keyword">true</span></code>.<br>
 </div>
 
-<pre><span id="VALadd"><span class="keyword">val</span> add</span> : <code class="type"><a href="Lru.F.S.html#TYPEk">k</a> -> <a href="Lru.F.S.html#TYPEv">v</a> -> <a href="Lru.F.S.html#TYPEt">t</a> -> <a href="Lru.F.S.html#TYPEt">t</a></code></pre><div class="info ">
-<code class="code">add&nbsp;k&nbsp;v&nbsp;t</code> is <code class="code">t</code> with the binding <code class="code">k&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;v</code>. If <code class="code">k</code> is alread bound in
-        <code class="code">t</code>, the old binding is replaced. In either case, the binding <code class="code">k&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;v</code>
-        is the most-recently-used.<br>
+<pre><span id="VALadd"><span class="keyword">val</span> add</span> : <code class="type">?trim:bool -> <a href="Lru.F.S.html#TYPEk">k</a> -> <a href="Lru.F.S.html#TYPEv">v</a> -> <a href="Lru.F.S.html#TYPEt">t</a> -> <a href="Lru.F.S.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">add&nbsp;k&nbsp;v&nbsp;t</code> is <code class="code">t</code> with the binding <code class="code">k&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;v</code>. If <code class="code">k</code> is already
+        bound in <code class="code">t</code>, the old binding is replaced. The binding <code class="code">k&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;v</code> is the
+        most-recently-used.
+<p>
+
+        When <code class="code">trim</code> is <code class="code"><span class="keyword">true</span></code>, <code class="code">add</code> <a href="Lru.F.S.html#VALtrim"><code class="code">trim</code></a>s the resulting map,
+        ensuring it is not over capacity. It defaults to <code class="code"><span class="keyword">true</span></code>.<br>
 </div>
 
 <pre><span id="VALremove"><span class="keyword">val</span> remove</span> : <code class="type"><a href="Lru.F.S.html#TYPEk">k</a> -> <a href="Lru.F.S.html#TYPEt">t</a> -> <a href="Lru.F.S.html#TYPEt">t</a></code></pre><div class="info ">
@@ -149,8 +163,7 @@ Values in <a href="Lru.F.S.html#TYPEt"><code class="code">t</code></a>.<br>
 </div>
 
 <pre><span id="VALiter"><span class="keyword">val</span> iter</span> : <code class="type">(<a href="Lru.F.S.html#TYPEk">k</a> -> <a href="Lru.F.S.html#TYPEv">v</a> -> unit) -> <a href="Lru.F.S.html#TYPEt">t</a> -> unit</code></pre><div class="info ">
-<code class="code">iter&nbsp;f&nbsp;t</code> applies <code class="code">f</code> to all the bindings in <code class="code">t</code> in key-increasing
-        order<br>
+<code class="code">iter&nbsp;f&nbsp;t</code> applies <code class="code">f</code> to all the bindings in <code class="code">t</code> in key-increasing order<br>
 </div>
 <br>
 <h1 id="1_Conversions">Conversions</h1><br>
@@ -159,15 +172,18 @@ Values in <a href="Lru.F.S.html#TYPEt"><code class="code">t</code></a>.<br>
 <code class="code">to_list&nbsp;t</code> are the bindings in <code class="code">t</code> in key-increasing order.<br>
 </div>
 
-<pre><span id="VALof_list"><span class="keyword">val</span> of_list</span> : <code class="type">?cap:int -> (<a href="Lru.F.S.html#TYPEk">k</a> * <a href="Lru.F.S.html#TYPEv">v</a>) list -> <a href="Lru.F.S.html#TYPEt">t</a></code></pre><div class="info ">
-<code class="code">of_list&nbsp;kvs</code> is a map with the bindings from <code class="code">kvs</code>. If there are
-        multiple bindings for the same <code class="code">k</code>, it is unspecified which one is
-        chosen.
+<pre><span id="VALof_list"><span class="keyword">val</span> of_list</span> : <code class="type">(<a href="Lru.F.S.html#TYPEk">k</a> * <a href="Lru.F.S.html#TYPEv">v</a>) list -> <a href="Lru.F.S.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">of_list&nbsp;kvs</code> is a map with bindings from <code class="code">kvs</code>. Its size and capacity
+        are the total weight of its bindings.
 <p>
 
-        <code class="code">~cap</code> is the capacity of the new map. It defaults to the total weight
-        of bindings in <code class="code">kvs</code>. If given, and smaller than then total weight of
-        <code class="code">v</code>s, bindings are discarded from the left of the list.<br>
+        With respect to duplicates and the recently-used order, it behaves as if
+        the bindings were added sequentially in the list order.
+<p>
+
+<pre class="codepre"><code class="code">w = size (of_list kvs)
+
+of_list kvs = <span class="constructor">List</span>.fold_left (<span class="keyword">fun</span> m (k, v) <span class="keywordsign">-&gt;</span> add k v m) (empty w) kvs</code></pre><br>
 </div>
 <br>
 <h1 id="1_Prettyprinting">Pretty-printing</h1><br>

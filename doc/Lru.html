@@ -11,6 +11,7 @@
 <link title="Index of modules" rel=Appendix href="index_modules.html">
 <link title="Index of module types" rel=Appendix href="index_module_types.html">
 <link title="Lru" rel="Chapter" href="Lru.html"><link title="Lru" rel="Section" href="#1_Lru">
+<link title="One-off memoization" rel="Section" href="#1_Oneoffmemoization">
 <title>Lru</title>
 </head>
 <body>
@@ -42,15 +43,11 @@ Scalable LRU caches
     To limit the maps by the number of bindings, use <code class="code"><span class="keyword">let</span>&nbsp;weight&nbsp;_&nbsp;=&nbsp;1</code>.
 <p>
 
-    <em>v0.1.1 — <a href="https://github.com/pqwy/lru ">homepage</a></em><br>
+    <em>v0.2.0 — <a href="https://github.com/pqwy/lru ">homepage</a></em><br>
 </div>
 <hr width="100%">
 <br>
 <h1 id="1_Lru">Lru</h1><br>
-
-<pre><span class="keyword">module type</span> <a href="Lru.Ordered.html">Ordered</a> = <code class="code"><span class="keyword">sig</span></code> <a href="Lru.Ordered.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info">
-Signature of ordered types.
-</div>
 
 <pre><span class="keyword">module type</span> <a href="Lru.Weighted.html">Weighted</a> = <code class="code"><span class="keyword">sig</span></code> <a href="Lru.Weighted.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info">
 Signature of types with measurable weight.
@@ -62,5 +59,24 @@ Functional LRU map.
 
 <pre><span class="keyword">module</span> <a href="Lru.M.html">M</a>: <code class="code"><span class="keyword">sig</span></code> <a href="Lru.M.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info">
 Mutable LRU map.
+</div>
+<br>
+<h1 id="1_Oneoffmemoization">One-off memoization</h1><br>
+
+<pre><span id="VALmemo"><span class="keyword">val</span> memo</span> : <code class="type">?hashed:('a -> int) * ('a -> 'a -> bool) -><br>       ?weight:('b -> int) -> cap:int -> (('a -> 'b) -> 'a -> 'b) -> 'a -> 'b</code></pre><div class="info ">
+<code class="code">memo&nbsp;?hashed&nbsp;?weight&nbsp;~cap&nbsp;f</code> is a new memoized instance of <code class="code">f</code>, using LRU
+    caching. <code class="code">f</code> is an open recursive function of one parameter.
+<p>
+
+    <code class="code">~hashed</code> are hashing and equality over the arguments <code class="code"><span class="keywordsign">'</span>a</code>. It defaults to
+    <code class="code">(<span class="constructor">Hashtbl</span>.hash,&nbsp;<span class="constructor">Pervasives</span>.(=))</code>.
+<p>
+
+    <code class="code">~weight</code> is the weighting function over the results <code class="code"><span class="keywordsign">'</span>b</code>. It defaults to
+    <code class="code"><span class="keyword">fun</span>&nbsp;_&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;1</code>.
+<p>
+
+    <code class="code">~cap</code> is the total cache capacity.<br>
+<b>Raises</b> <code>Invalid_argument</code> when <code class="code">cap&nbsp;&lt;&nbsp;0</code>.<br>
 </div>
 </body></html>
