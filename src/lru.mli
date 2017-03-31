@@ -190,6 +190,8 @@ module M : sig
         [~random] randomizes the underlying hash table. It defaults to [false].
         See {!Hashtbl.create}.
 
+        {b Note.} The internal hash table is created with size [cap].
+
         @raise Invalid_argument when [cap < 0]. *)
 
     val is_empty : t -> bool
