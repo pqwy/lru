@@ -11,63 +11,56 @@ end
 module F = Lru.F.Make (I) (I)
 module M = Lru.M.Make (I) (I)
 
-let () = Unmark.warmup ()
+module type S = sig
+  type t
+  val mk : int list -> t
+  val q : int -> t -> unit
+  val a : int -> int -> t -> unit
+end
 
 let double xs = List.map (fun x -> (x, x)) xs
+let randoms n = List.init n (fun _ -> Random.int 2_000_000)
 
-let rec init f = function 0 -> [] | n ->
-  let x = f n in x :: init f (pred n)
+open Unmark
 
-let randoms = init (fun _ -> Random.int 2_000_000)
+let suite ms n =
+  let rs, rs1 = randoms n, randoms n in
+  group (string_of_int n) [
+    group "q" (ms |> List.map @@ fun (name, (module M: S)) ->
+      let t = M.mk rs in
+      (* bench name (fun () -> M.q (Random.int 2_000_000) t)) *)
+      bench name (fun () -> rs |> List.iter (fun x -> M.q x t)))
+  ; group "a" (ms |> List.map @@ fun (name, (module M: S)) ->
+      let t = M.mk rs in
+      (* bench name (fun () -> let x = Random.int 2_000_000 in M.a x x t)) *)
+      bench name (fun () -> rs1 |> List.iter (fun x -> M.a x x t)))
+  ]
 
-let f_of_xs xs = F.of_list (double xs)
-let m_of_xs xs = M.of_list (double xs)
-let ht_of_xs xs =
-  let h = Hashtbl.create 20 in
-  xs |> List.iter (fun x -> Hashtbl.replace h x x); h
+let impls = [
+  "fun", (module struct
+    type t = F.t
+    let mk xs = F.of_list (double xs)
+    let q x q = F.find ~promote:false x q |> Sys.opaque_identity |> ignore
+    let a x y q = F.add x y q |> Sys.opaque_identity |> ignore
+  end: S)
+; "imp",
+  (module struct
+    type t = M.t
+    let mk xs = M.of_list (double xs)
+    let q x q = M.find ~promote:false x q |> Sys.opaque_identity |> ignore
+    let a a b m = M.add a b m
+  end: S)
+; "ht",
+  (module struct
+    type t = (int, int) Hashtbl.t
+    let mk xs =
+      let h = Hashtbl.create 20 in
+      xs |> List.iter (fun x -> Hashtbl.replace h x x);
+      h
+    let a k v m = Hashtbl.replace m k v
+    let q k m = Hashtbl.add m k |> ignore
+  end: S)
+]
 
-let rquery tag mk q n =
-  let rs  = randoms n in
-  let m   = mk rs in
-  let tag = Format.sprintf "q: %s/%d" tag n in
-  Unmark.time ~tag ~measure:`Cputime_ns ~n:1000 @@ fun () ->
-    rs |> List.iter (fun x -> q x m)
-
-let () =
-  Format.printf "+ find\n%!";
-  let (mk, q) = (f_of_xs, (fun x q -> F.find x q |> ignore)) in
-  rquery "fun" mk q 10;
-  rquery "fun" mk q 100;
-  rquery "fun" mk q 1000;
-  let (mk, q) = (m_of_xs, (fun x q -> M.find x q |> ignore)) in
-  rquery "imp" mk q 10;
-  rquery "imp" mk q 100;
-  rquery "imp" mk q 1000;
-  let (mk, q) = (ht_of_xs, (fun x q -> Hashtbl.find q x |> ignore)) in
-  rquery "ht" mk q 10;
-  rquery "ht" mk q 100;
-  rquery "ht" mk q 1000;
-  ()
-
-let radd tag mk a n =
-  let (rs, rs') = (randoms n, randoms n) in
-  let m         = mk rs in
-  let tag       = Format.sprintf "q: %s/%d" tag n in
-  Unmark.time ~tag ~measure:`Cputime_ns ~n:1000 @@ fun () ->
-    rs' |> List.iter (fun x -> a x x m)
-
-let () =
-  Format.printf "+ add\n%!";
-  let (mk, q) = (f_of_xs, (fun k v m -> F.add k v m |> ignore)) in
-  radd "fun" mk q 10;
-  radd "fun" mk q 100;
-  radd "fun" mk q 1000;
-  let (mk, q) = (m_of_xs, M.add) in
-  radd "imp" mk q 10;
-  radd "imp" mk q 100;
-  radd "imp" mk q 1000;
-  let (mk, q) = (ht_of_xs, (fun k v m -> Hashtbl.replace m k v)) in
-  radd "ht" mk q 10;
-  radd "ht" mk q 100;
-  radd "ht" mk q 1000;
-  ()
+let arg = Cmdliner.Arg.(value @@ opt (list int) [10; 100; 1000] @@ info ["size"])
+let _ = Unmark_cli.main_ext "lru" ~arg @@ List.map (suite impls)

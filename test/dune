@@ -6,4 +6,4 @@
 (executable
   (name bench)
   (modules bench)
-  (libraries lru unmark unmark.cli))
+  (libraries lru unmark unmark.cli cmdliner))
