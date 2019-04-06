@@ -1,0 +1,9 @@
+(test
+  (name test)
+  (modules test adapt)
+  (libraries lru alcotest))
+
+(executable
+  (name bench)
+  (modules bench)
+  (libraries lru unmark unmark.cli))

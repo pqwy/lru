@@ -1,7 +1,0 @@
-description = "Scalable LRU caches"
-version = "%%VERSION_NUM%%"
-requires = "psq"
-archive(byte) = "lru.cma"
-archive(native) = "lru.cmxa"
-plugin(byte) = "lru.cma"
-plugin(native) = "lru.cmxs"

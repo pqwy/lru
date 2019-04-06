@@ -1,4 +1,0 @@
-PKG bytes psq
-S src
-S test
-B _build/**
