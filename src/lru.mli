@@ -56,13 +56,13 @@ module F : sig
     val is_empty : t -> bool
     (** [is_empty t] is [true] iff there are no bindings in [t]. *)
 
-    val items : t -> int
-    (** [items t] is the number of bindings in [t]. *)
+    val size : t -> int
+    (** [size t] is the number of bindings in [t]. *)
 
     (** {1 Limiting the weight of bindings} *)
 
-    val size : t -> int
-    (** [size t] is the combined weight of bindings in [t]. *)
+    val weight : t -> int
+    (** [weight t] is the combined weight of bindings in [t]. *)
 
     val capacity : t -> int
     (** [capacity t] is the maximum combined weight of bindings this map will
@@ -77,7 +77,7 @@ module F : sig
     val trim : t -> t
     (** [trim t] is [t'], the map that contains as many most-recently-used
         bindings in [t] as its capacity permits (that is,
-        [size t' <= capacity t']).
+        [weight t' <= capacity t']).
 
         When [t] is over capacity, its bindings are discarded in
         least-recently-used order. Otherwise, [t == t']. *)
@@ -106,8 +106,8 @@ module F : sig
     (** [remove k t] is [t] without the binding for [k], or [t] if [k] is not
         bound in [t]. *)
 
-    val unadd : k -> t -> (v * t) option
-    (** [unadd k t] is [(v, t')], where [v] is the value bound to [k], and [t']
+    val pop : k -> t -> (v * t) option
+    (** [pop k t] is [(v, t')], where [v] is the value bound to [k], and [t']
         is [t] without the binding [k -> t], or [None] if [k] is not bound in
         [t]. *)
 
@@ -140,13 +140,13 @@ module F : sig
     (** [to_list t] are the bindings in [t] in key-increasing order. *)
 
     val of_list : (k * v) list -> t
-    (** [of_list kvs] is a map with bindings from [kvs]. Its size and capacity
+    (** [of_list kvs] is a map with bindings from [kvs]. Its weight and capacity
         are the total weight of its bindings.
 
         With respect to duplicates and the recently-used order, it behaves as if
         the bindings were added sequentially in the list order.
 
-{[w = size (of_list kvs)
+{[w = weight (of_list kvs)
 
 of_list kvs = List.fold_left (fun m (k, v) -> add k v m) (empty w) kvs]} *)
 
@@ -159,8 +159,8 @@ of_list kvs = List.fold_left (fun m (k, v) -> add k v m) (empty w) kvs]} *)
              (formatter -> k * v -> unit) -> formatter -> t -> unit
     (** [pp ~pp_size ~sep pp_kv ppf t] pretty-prints [t] to [ppf], using [pp_kv]
         to print the bindings, [~sep] to separate them, and [~pp_size] to print
-        the {{!size}[size]} and {{!capacity}[capacity]}. [~sep] and [~pp_size]
-        default to unspecified printers. *)
+        the {{!weight}[weight]} and {{!capacity}[capacity]}. [~sep] and
+        [~pp_size] default to unspecified printers. *)
 
     (**/**)
     val pp_dump : (formatter -> k * v -> unit) -> formatter -> t -> unit
@@ -202,13 +202,13 @@ module M : sig
     val is_empty : t -> bool
     (** [is_empty t] is [true] iff there are no bindings in [t]. *)
 
-    val items : t -> int
-    (** [items t] is the number of bindings in [t]. *)
+    val size : t -> int
+    (** [size t] is the number of bindings in [t]. *)
 
     (** {1 Limiting the weight of bindings} *)
 
-    val size : t -> int
-    (** [size t] is the combined weight of bindings in [t]. *)
+    val weight : t -> int
+    (** [weight t] is the combined weight of bindings in [t]. *)
 
     val capacity : t -> int
     (** [capacity t] is the maximum combined weight of bindings this map will
@@ -221,8 +221,8 @@ module M : sig
         @raise Invalid_argument when [cap < 0]. *)
 
     val trim : t -> unit
-    (** [trim t] drops the bindings in [t] until they fit its capacity (that is,
-        until [size t <= capacity t]).
+    (** [trim t] drops the bindings in [t] until they fit its capacity
+        (that is, until [weight t <= capacity t]).
 
         Binding are discards in least-recently-used order. *)
 
@@ -287,7 +287,7 @@ module M : sig
         to [`Up]. *)
 
     val of_list : (k * v) list -> t
-    (** [of_list kvs] is a map with the bindings from [kvs]. Its size and
+    (** [of_list kvs] is a map with the bindings from [kvs]. Its weight and
         capacity are the total weight of its bindings.
 
         With respect to duplicates and the recently-used order, it behaves as if
@@ -302,8 +302,8 @@ module M : sig
              (formatter -> k * v -> unit) -> formatter -> t -> unit
     (** [pp ~pp_size ~sep pp_kv ppf t] pretty-prints [t] to [ppf], using [pp_kv]
         to print the bindings, [~sep] to separate them, and [~pp_size] to print
-        the {{!size}[size]} and {{!capacity}[capacity]}. [~sep] and [~pp_size]
-        default to unspecified printers. *)
+        the {{!weight}[weight]} and {{!capacity}[capacity]}. [~sep] and
+        [~pp_size] default to unspecified printers. *)
 
     (**/**)
     val pp_dump : (formatter -> k * v -> unit) -> formatter -> t -> unit

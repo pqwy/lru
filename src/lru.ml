@@ -18,8 +18,8 @@ module F = struct
     type v
     val empty : int -> t
     val is_empty : t -> bool
-    val items : t -> int
     val size : t -> int
+    val weight : t -> int
     val capacity : t -> int
     val resize : int -> t -> t
     val trim : t -> t
@@ -28,7 +28,7 @@ module F = struct
     val promote : k -> t -> t
     val add : k -> v -> t -> t
     val remove : k -> t -> t
-    val unadd : k -> t -> (v * t) option
+    val pop : k -> t -> (v * t) option
     val lru : t -> (k * v) option
     val drop_lru : t -> t
     val pop_lru : t -> ((k * v) * t) option
@@ -55,8 +55,8 @@ module F = struct
     let g0 = min_int
 
     let is_empty t = Q.is_empty t.q
-    let items t = Q.size t.q
-    let size t = t.w
+    let size t = Q.size t.q
+    let weight t = t.w
     let capacity t = t.cap
 
     let cap_makes_sense = cap_makes_sense ~m:"F"
@@ -94,7 +94,7 @@ module F = struct
       | None -> t
       | Some (_, v) -> { t with w = t.w - V.weight v; q = Q.remove k t.q }
 
-    let unadd k t = match Q.find k t.q with
+    let pop k t = match Q.find k t.q with
       | None -> None
       | Some (_, v) ->
           Some (v, { t with w = t.w - V.weight v; q = Q.remove k t.q })
@@ -128,7 +128,7 @@ module F = struct
     let pp ?pp_size ?sep pp ppf t =
       ( match pp_size with
         | Some pps -> pps ppf (t.w, t.cap)
-        | _        -> Format.fprintf ppf "size: %d/%d;@ " t.w t.cap );
+        | _        -> Format.fprintf ppf "weight: %d/%d;@ " t.w t.cap );
       Q.pp ?sep (fun ppf (k, (_, v)) -> pp ppf (k, v)) ppf t.q
 
     let pp_dump pp ppf t =
@@ -136,7 +136,7 @@ module F = struct
       let sep ppf () = Format.fprintf ppf ",@ "
       and ppkv ppf (k, (gen, v)) =
         Format.fprintf ppf "@[%a @@ %d@]" pp (k, v) (g gen) in
-      Format.fprintf ppf "{@[size: %d/%d;@ gen: %d;@ @[%a@]@]}"
+      Format.fprintf ppf "{@[weight: %d/%d;@ gen: %d;@ @[%a@]@]}"
         t.w t.cap (g t.gen) Q.(pp ~sep ppkv) t.q
   end
 
@@ -195,8 +195,8 @@ module M = struct
     type v
     val create : ?random:bool -> int -> t
     val is_empty : t -> bool
-    val items : t -> int
     val size : t -> int
+    val weight : t -> int
     val capacity : t -> int
     val resize : int -> t -> unit
     val trim : t -> unit
@@ -228,9 +228,9 @@ module M = struct
       mutable w   : int;
     }
 
-    let items t = HT.length t.ht
+    let size t = HT.length t.ht
 
-    let size t = t.w
+    let weight t = t.w
 
     let capacity t = t.cap
 
@@ -253,7 +253,7 @@ module M = struct
           HT.remove t.ht k;
           Q.detach t.q n
 
-    let rec trim t = if size t > t.cap then (drop_lru t; trim t)
+    let rec trim t = if weight t > t.cap then (drop_lru t; trim t)
 
     let resize cap t = cap_makes_sense ~f:"resize" cap; t.cap <- cap
 
@@ -304,12 +304,12 @@ module M = struct
     let pp ?(pp_size) ?(sep=Format.pp_print_space) pp ppf t =
       ( match pp_size with
         | Some pps -> pps ppf (t.w, t.cap)
-        | _        -> Format.fprintf ppf "size: %d/%d;@ " t.w t.cap );
+        | _        -> Format.fprintf ppf "weight: %d/%d;@ " t.w t.cap );
       pp_q sep pp ppf t
 
     let pp_dump pp ppf t =
       let sep ppf () = Format.fprintf ppf ",@ " in
-      Format.fprintf ppf "{@[size: %d/%d;@ MRU: %a@]}"
+      Format.fprintf ppf "{@[weight: %d/%d;@ MRU: %a@]}"
         t.w t.cap (pp_q sep pp) t
   end
 

@@ -2,9 +2,6 @@
 
 Breaking:
 
-The following two changes clean up the semantics of maintaining capacity and
-ordering:
-
 - `find` drops the `?promote` parameter; it never changes the ordering. fix:
   * Replace `find ~promote:false` with `find`.
   * Replace `find k t` and `find ~promote:true k t` with
@@ -12,6 +9,9 @@ ordering:
 - `add` drops the the `?trim` parameter; it never drops bindings. fix:
   * Replace `add ~trim:false` with `add`.
   * Replace `add` and `add ~trim:true` with `add` followed by `trim`.
+- `size` -> `weight`
+- `items` -> `size`
+- `unadd` -> `pop`
 
 ## v0.2.0 2017-03-31
 
