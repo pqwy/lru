@@ -21,11 +21,12 @@ module F = struct
     val items : t -> int
     val size : t -> int
     val capacity : t -> int
-    val trim : t -> t
     val resize : int -> t -> t
+    val trim : t -> t
     val mem : k -> t -> bool
-    val find : ?promote:bool -> k -> t -> (v * t) option
-    val add : ?trim:bool -> k -> v -> t -> t
+    val find : k -> t -> v option
+    val promote : k -> t -> t
+    val add : k -> v -> t -> t
     val remove : k -> t -> t
     val unadd : k -> t -> (v * t) option
     val lru : t -> (k * v) option
@@ -63,19 +64,31 @@ module F = struct
     let empty cap =
       cap_makes_sense ~f:"empty" cap; { cap; w = 0; gen = g0; q = Q.empty }
 
+    let resize cap t = cap_makes_sense ~f:"resize" cap; { t with cap }
+
     let mem k t = Q.mem k t.q
+
+    let find k t = match Q.find k t.q with Some (_, v) -> Some v | _ -> None
 
     let trim t =
       let rec go t w q =
         if w > t.cap then match Q.pop q with
-          | Some ((_, (_, v)), q) -> go t (w - V.weight v) q
-          | None -> assert false
+          Some ((_, (_, v)), q) -> go t (w - V.weight v) q
+        | None -> assert false
         else { t with w; q } in
       if t.w > t.cap then go t t.w t.q else t
 
-    let trimq cond t = if cond then trim t else t
+    let promote k ({ gen; _ } as t) =
+      if gen = max_int then empty t.cap else
+        { t with gen = gen + 1; q = Q.adjust (fun (_, v) -> gen, v) k t.q }
 
-    let resize cap t = cap_makes_sense ~f:"resize" cap; { t with cap }
+    let rec add k v ({ gen; _ } as t) =
+      if gen = max_int then add k v (empty t.cap) else
+        let p = Some (gen, v) and p0 = ref None in
+        let q = Q.update k (fun x -> p0 := x; p) t.q in
+        let w = t.w + V.weight v -
+          (match !p0 with Some (_, v0) -> V.weight v0 | _ -> 0) in
+        { t with gen = gen + 1; w; q }
 
     let remove k t = match Q.find k t.q with
       | None -> t
@@ -85,27 +98,6 @@ module F = struct
       | None -> None
       | Some (_, v) ->
           Some (v, { t with w = t.w - V.weight v; q = Q.remove k t.q })
-
-    let rec add ?(trim=true) k v t =
-      if t.gen < max_int then
-        let p   = (t.gen, v)
-        and w   = t.w + V.weight v
-        and gen = t.gen + 1 in
-        trimq trim @@ match Q.find k t.q with
-        | None -> { t with gen; w; q = Q.add k p t.q }
-        | Some (_, v0) ->
-            { t with gen; w = w - V.weight v0; q = Q.adjust (fun _ -> p) k t.q }
-      else add ~trim k v (empty t.cap)
-
-    let find ?(promote=true) k ({ gen; _ } as t) =
-      if promote then
-        let r = ref None in
-        let q = Q.adjust (fun (_, v) -> r := Some v; (gen, v)) k t.q in
-        match !r with
-        | Some v when gen < max_int -> Some (v, { t with gen = gen + 1; q })
-        | Some v -> Some (v, add k v (empty t.cap))
-        | None -> None
-      else match Q.find k t.q with Some (_, v) -> Some (v, t) | _ -> None
 
     let lru t = match Q.min t.q with Some (k, (_, v)) -> Some (k, v) | _ -> None
 
@@ -206,11 +198,12 @@ module M = struct
     val items : t -> int
     val size : t -> int
     val capacity : t -> int
-    val trim : t -> unit
     val resize : int -> t -> unit
+    val trim : t -> unit
     val mem : k -> t -> bool
-    val find : ?promote:bool -> k -> t -> v option
-    val add : ?trim:bool -> k -> v -> t -> unit
+    val find : k -> t -> v option
+    val promote : k -> t -> unit
+    val add : k -> v -> t -> unit
     val remove : k -> t -> unit
     type dir = [ `Up | `Down ]
     val lru : t -> (k * v) option
@@ -271,19 +264,19 @@ module M = struct
         HT.remove t.ht k; Q.detach t.q n
       with Not_found -> ()
 
-    let add ?trim:(cond=true) k v t =
+    let add k v t =
       remove k t;
       let n = Q.node (k, v) in
       t.w <- t.w + V.weight v;
-      HT.add t.ht k n; Q.append t.q n;
-      if cond then trim t
+      HT.add t.ht k n; Q.append t.q n
 
-    let find ?(promote=true) k t =
+    let promote k t =
       try
-        let n = HT.find t.ht k in
-        if promote then Q.( detach t.q n; append t.q n );
-        Some (snd n.Q.value)
-      with Not_found -> None
+        let n = HT.find t.ht k in Q.( detach t.q n; append t.q n )
+      with Not_found -> ()
+
+    let find k t =
+      try Some (snd (HT.find t.ht k).Q.value) with Not_found -> None
 
     let mem k t = HT.mem t.ht k
 
@@ -297,7 +290,7 @@ module M = struct
 
     let of_list xs =
       let t = create 0 in
-      List.iter (fun (k, v) -> add ~trim:false k v t) xs;
+      List.iter (fun (k, v) -> add k v t) xs;
       resize (Q.fold (fun (_, v) w -> w + V.weight v) 0 t.q) t;
       t
 

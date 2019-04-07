@@ -54,10 +54,12 @@ module F : sig
         @raise Invalid_argument when [cap < 0]. *)
 
     val is_empty : t -> bool
-    (** [is_empty t] is [true] iff [t] is empty. *)
+    (** [is_empty t] is [true] iff there are no bindings in [t]. *)
 
     val items : t -> int
     (** [items t] is the number of bindings in [t]. *)
+
+    (** {1 Limiting the weight of bindings} *)
 
     val size : t -> int
     (** [size t] is the combined weight of bindings in [t]. *)
@@ -66,44 +68,47 @@ module F : sig
     (** [capacity t] is the maximum combined weight of bindings this map will
         hold before they start being discarded in least-recently-used order. *)
 
-    val trim : t -> t
-    (** [trim t] is the map [t'], that contains as many most-recently-used
-        bindings in [t] as its capacity permits ([size t' <= capacity t']).
-        If [t] is over capacity, bindings are discarded in least-recently-used
-        order. Otherwise, [t' == t]. *)
-
     val resize : int -> t -> t
-    (** [resize cap t] a map with exactly the bindings in [t], but the capacity
-        set to [cap].
+    (** [resize cap t] sets [t]'s capacity to [cap], while leaving the bindings
+        unchanged.
 
         @raise Invalid_argument when [cap < 0]. *)
+
+    val trim : t -> t
+    (** [trim t] is [t'], the map that contains as many most-recently-used
+        bindings in [t] as its capacity permits (that is,
+        [size t' <= capacity t']).
+
+        When [t] is over capacity, its bindings are discarded in
+        least-recently-used order. Otherwise, [t == t']. *)
 
     (** {1 Access by [k]} *)
 
     val mem : k -> t -> bool
     (** [mem k t] is [true] iff [k] is bound in [t]. *)
 
-    val find : ?promote:bool -> k -> t -> (v * t) option
-    (** [find k t] is [(v, t')], where [v] is the value bound to [k].
+    val find : k -> t -> v option
+    (** [find k t] is [Some v] when [k -> v] is bound in [t], or [None]
+        otherwise. *)
 
-        When [promote] is [true], [t'] is [t] with the binding [k -> v] promoted
-        to most-recently-used. Otherwise, [t' == t]. It defaults to [true]. *)
+    val promote : k -> t -> t
+    (** [promote k t] is [t] with the binding for [k] promoted to
+        most-recently-used, or [t] if [k] is not bound in [t]. *)
 
-    val add : ?trim:bool -> k -> v -> t -> t
-    (** [add k v t] is [t] with the binding [k -> v]. If [k] is already
-        bound in [t], the old binding is replaced. The binding [k -> v] is the
-        most-recently-used.
+    val add : k -> v -> t -> t
+    (** [add k v t] adds the binding [k -> v] to [t] as the most-recently-used
+        binding.
 
-        When [trim] is [true], [add] {{!trim}[trim]}s the resulting map,
-        ensuring it is not over capacity. It defaults to [true]. *)
+        {b Note} [add] does not remove bindings. To ensure that the resulting
+        map is not over capacity, compose with {{!trim}[trim]}. *)
 
     val remove : k -> t -> t
-    (** [remove k t] is [t] without the binding for [k], or [t], if [k] is not
+    (** [remove k t] is [t] without the binding for [k], or [t] if [k] is not
         bound in [t]. *)
 
     val unadd : k -> t -> (v * t) option
     (** [unadd k t] is [(v, t')], where [v] is the value bound to [k], and [t']
-        is [t] without the binding [k -> t], or [None], if [k] is not bound in
+        is [t] without the binding [k -> t], or [None] if [k] is not bound in
         [t]. *)
 
     (** {1 Access to least-recently-used bindings} *)
@@ -195,10 +200,12 @@ module M : sig
         @raise Invalid_argument when [cap < 0]. *)
 
     val is_empty : t -> bool
-    (** [is_empty t] is [true] iff [t] is empty. *)
+    (** [is_empty t] is [true] iff there are no bindings in [t]. *)
 
     val items : t -> int
     (** [items t] is the number of bindings in [t]. *)
+
+    (** {1 Limiting the weight of bindings} *)
 
     val size : t -> int
     (** [size t] is the combined weight of bindings in [t]. *)
@@ -207,38 +214,42 @@ module M : sig
     (** [capacity t] is the maximum combined weight of bindings this map will
         hold before they start being discarded in least-recently-used order. *)
 
-    val trim : t -> unit
-    (** [trim t] discards bindings from [t], if needed, until
-        [size t <= capacity t]. The bindings are discarded in
-        least-recently-used order. *)
-
     val resize : int -> t -> unit
-    (** [resize cap t] changes the capacity of [t] to [cap], while leavind the
-        bindings unchanged.
+    (** [resize cap t] sets [t]'s capacity to [cap], while leaving the bindings
+        unchanged.
 
         @raise Invalid_argument when [cap < 0]. *)
+
+    val trim : t -> unit
+    (** [trim t] drops the bindings in [t] until they fit its capacity (that is,
+        until [size t <= capacity t]).
+
+        Binding are discards in least-recently-used order. *)
 
     (** {1 Access by [k]} *)
 
     val mem : k -> t -> bool
     (** [mem k t] is [true] iff [k] is bound in [t]. *)
 
-    val find : ?promote:bool -> k -> t -> v option
-    (** [find k t] is the [v] bound to [k]. When [k] is not bound in
-        [t], the result is [None].
+    val find : k -> t -> v option
+    (** [find k t] is [Some v] when [k -> v] is bound in [t], or [None]
+        otherwise.
 
-        If [promote] is [true], the binding [k -> v] is promoted to
-        most-recently-used. It defaults to [true]. *)
+        {b Note} This operation does not change the recently-used order. *)
 
-    val add : ?trim:bool -> k -> v -> t -> unit
-    (** [add k v t] adds the binding [k -> v] to [t]. If [k] is alread bound, the
-        old binding is replaced. The binding [k -> v] becomes most-recently-used.
+    val promote : k -> t -> unit
+    (** [promote k t] sets the binding for [k], if it exists, to be the
+        most-recently-used. *)
 
-        If [trim] is [true], [add] {{!trim}[trim]}s the resulting map, ensuring
-        it is not over capacity. It defaults to [true]. *)
+    val add : k -> v -> t -> unit
+    (** [add k v t] adds the binding [k -> v] to [t] as the most-recently-used
+        binding.
+
+        {b Note} [add] does not remove bindings. To ensure that the resulting
+        map is not over capacity, invoke {{!trim}[trim]}. *)
 
     val remove : k -> t -> unit
-    (** [remove k m] removes the binding for [k], if one exists. *)
+    (** [remove k m] removes the binding for [k] if it exists. *)
 
     (** {1 Access to least-recently-used bindings} *)
 
