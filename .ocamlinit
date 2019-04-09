@@ -21,8 +21,8 @@ let init f n =
     if i = n then [] else let x = f i in x :: go (i + 1) in
   go 0
 
-let ppf = F.pp_dump (fun ppf (k, v) -> Format.fprintf ppf "%d -> %d" k v)
-let ppm = M.pp_dump (fun ppf (k, v) -> Format.fprintf ppf "%d -> %d" k v)
+let ppf = F.pp_dump Fmt.int Fmt.int
+let ppm = M.pp_dump Fmt.int Fmt.int
 
 ;;
 

@@ -3,9 +3,10 @@
 
 (** Scalable LRU caches
 
-    [Lru] provides size-bounded finite maps that remove the least-recently-used
-    (LRU) bindings in order to maintain the size constraint. Two implementations
-    are provided: one is {{!F}functional}, the other {{!M}imperative}.
+    [Lru] provides weight-bounded finite maps that can remove the
+    least-recently-used (LRU) bindings in order to maintain a weight constraint.
+    Two implementations are provided: one is {{!F}functional}, the other
+    {{!M}imperative}.
 
     The {{!F}functional} map is backed by a
     {{:https://github.com/pqwy/psq}priority search queue}. Operations on
@@ -20,6 +21,26 @@
     To limit the maps by the number of bindings, use [let weight _ = 1].
 
     {e %%VERSION%% — {{:%%PKG_HOMEPAGE%% }homepage}} *)
+
+(** {1:sem Semantics}
+
+    A pretty accurate model of a {{!F.S}functional} [k -> v] map is an
+    association list ([(k * v) list]) with unique keys.
+
+    {{!F.S.add}Adding} a bindings [k -> v] to [kvs] means
+    [List.remove_assoc k kvs @ [(k, v)]], {{!F.S.find}finding} a [k] means
+    [List.assoc_opt k kvs], and removing it means [List.remove_assoc k kvs].
+
+    The {{!F.S.lru}LRU binding} is then the first element of the list.
+
+    {{!F.S.promote}Promoting} a binding [k -> v] means removing, and then
+    re-adding it.
+
+    {{!F.S.trim}Trimming} [kvs] means retaining the longest suffix with the sum
+    of [weight v] not larger than {{!F.S.capacity}capacity}.
+
+    The {{!M.S}imperative} LRU map is like the above, but kept in a reference
+    cell. *)
 
 (** {1 Lru} *)
 
@@ -65,8 +86,8 @@ module F : sig
     (** [weight t] is the combined weight of bindings in [t]. *)
 
     val capacity : t -> int
-    (** [capacity t] is the maximum combined weight of bindings this map will
-        hold before they start being discarded in least-recently-used order. *)
+    (** [capacity t] is the maximum combined weight of bindings that {!trim}
+        will retain. *)
 
     val resize : int -> t -> t
     (** [resize cap t] sets [t]'s capacity to [cap], while leaving the bindings
@@ -75,12 +96,9 @@ module F : sig
         @raise Invalid_argument when [cap < 0]. *)
 
     val trim : t -> t
-    (** [trim t] is [t'], the map that contains as many most-recently-used
-        bindings in [t] as its capacity permits (that is,
-        [weight t' <= capacity t']).
+    (** [trim t] is [t'], where [weight t' <= capacity t'].
 
-        When [t] is over capacity, its bindings are discarded in
-        least-recently-used order. Otherwise, [t == t']. *)
+        This is achieved by discarding bindings in LRU-to-MRU order. *)
 
     (** {1 Access by [k]} *)
 
@@ -103,8 +121,7 @@ module F : sig
         map is not over capacity, compose with {{!trim}[trim]}. *)
 
     val remove : k -> t -> t
-    (** [remove k t] is [t] without the binding for [k], or [t] if [k] is not
-        bound in [t]. *)
+    (** [remove k t] is [t] without a binding for [k]. *)
 
     val pop : k -> t -> (v * t) option
     (** [pop k t] is [(v, t')], where [v] is the value bound to [k], and [t']
@@ -128,27 +145,37 @@ module F : sig
     (** {1 Aggregate access} *)
 
     val fold : (k -> v -> 'a -> 'a) -> 'a -> t -> 'a
-    (** [fold f z t] is [f k0 v0 (... (f kn vn z))]. Binding are folded over in
-        key-increasing order. *)
+    (** [fold f z t] is [f k0 v0 (... (f kn vn z))], where [k0 -> v0] is LRU and
+        [kn -> vn] is MRU. *)
+
+    val fold_k : (k -> v -> 'a -> 'a) -> 'a -> t -> 'a
+    (** [fold_k f z t] folds in key-increasing order, ignoring the recently-used
+        ordering.
+
+        {b Note} [fold_k] is faster than [fold]. *)
 
     val iter : (k -> v -> unit) -> t -> unit
-    (** [iter f t] applies [f] to all the bindings in [t] in key-increasing order *)
+    (** [iter f t] applies [f] to all the bindings in [t] in in LRU-to-MRU
+        order. *)
+
+    val iter_k : (k -> v -> unit) -> t -> unit
+    (** [iter_k f t] applies f in key-increasing order, ignoring the
+        recently-used ordering.
+
+        {b Note} [iter_k] is faster than [iter]. *)
 
     (** {1 Conversions} *)
 
-    val to_list : t -> (k * v) list
-    (** [to_list t] are the bindings in [t] in key-increasing order. *)
-
     val of_list : (k * v) list -> t
-    (** [of_list kvs] is a map with bindings from [kvs]. Its weight and capacity
-        are the total weight of its bindings.
+    (** [of_list kvs] is a map with bindings [kvs], where the order of the list
+        becomes LRU-to-MRU ordering, and its {{!capacity}[capacity]} is set to
+        its {{!weight}[weight]}.
 
-        With respect to duplicates and the recently-used order, it behaves as if
-        the bindings were added sequentially in the list order.
+        The resulting [t] has the same shape as if the bindings were
+        sequentially {{!add}added} in list order, except for capacity. *)
 
-{[w = weight (of_list kvs)
-
-of_list kvs = List.fold_left (fun m (k, v) -> add k v m) (empty w) kvs]} *)
+    val to_list : t -> (k * v) list
+    (** [to_list t] are the bindings in [t] in LRU-to-MRU order. *)
 
     open Format
 
@@ -163,7 +190,8 @@ of_list kvs = List.fold_left (fun m (k, v) -> add k v m) (empty w) kvs]} *)
         [~pp_size] default to unspecified printers. *)
 
     (**/**)
-    val pp_dump : (formatter -> k * v -> unit) -> formatter -> t -> unit
+    val pp_dump : (formatter -> k -> unit) -> (formatter -> v -> unit)
+                    -> formatter -> t -> unit
     (**/**)
   end
 
@@ -179,6 +207,8 @@ module M : sig
 
   (** Signature of mutable LRU maps. *)
   module type S = sig
+
+    (** {1 Mutable LRU map} *)
 
     type t
     (** A map. *)
@@ -211,8 +241,8 @@ module M : sig
     (** [weight t] is the combined weight of bindings in [t]. *)
 
     val capacity : t -> int
-    (** [capacity t] is the maximum combined weight of bindings this map will
-        hold before they start being discarded in least-recently-used order. *)
+    (** [capacity t] is the maximum combined weight of bindings that {!trim}
+        will retain. *)
 
     val resize : int -> t -> unit
     (** [resize cap t] sets [t]'s capacity to [cap], while leaving the bindings
@@ -221,10 +251,8 @@ module M : sig
         @raise Invalid_argument when [cap < 0]. *)
 
     val trim : t -> unit
-    (** [trim t] drops the bindings in [t] until they fit its capacity
-        (that is, until [weight t <= capacity t]).
-
-        Binding are discards in least-recently-used order. *)
+    (** [trim t] ensures that [weight t <= capacity t] by dropping bindings in
+        LRU-to-MRU order. *)
 
     (** {1 Access by [k]} *)
 
@@ -238,7 +266,7 @@ module M : sig
         {b Note} This operation does not change the recently-used order. *)
 
     val promote : k -> t -> unit
-    (** [promote k t] sets the binding for [k], if it exists, to be the
+    (** [promote k t] promotes the binding for [k], if it exists, to
         most-recently-used. *)
 
     val add : k -> v -> t -> unit
@@ -246,10 +274,10 @@ module M : sig
         binding.
 
         {b Note} [add] does not remove bindings. To ensure that the resulting
-        map is not over capacity, invoke {{!trim}[trim]}. *)
+        map is not over capacity, combine with {{!trim}[trim]}. *)
 
     val remove : k -> t -> unit
-    (** [remove k m] removes the binding for [k] if it exists. *)
+    (** [remove k t] is [t] without a binding for [k]. *)
 
     (** {1 Access to least-recently-used bindings} *)
 
@@ -260,38 +288,28 @@ module M : sig
     val drop_lru : t -> unit
     (** [drop_lru t] removes the binding [lru t]. *)
 
-    (** {1 Traversal direction} *)
-
-    type dir = [ `Up | `Down ]
-    (** Traversal direction for operations that visit all bindings.
-        {ul
-        {- [`Up] means least-to-most recently used, or increasing relevance.}
-        {- [`Down] means most-to-least recently used, or decreasing relevance.}} *)
-
     (** {1 Aggregate access} *)
 
-    val fold : ?dir:dir -> (k -> v -> 'a -> 'a) -> 'a -> t -> 'a
-    (** [fold f z t] is [f k0 v0 (... (f kn vn z))].
+    val fold : (k -> v -> 'a -> 'a) -> 'a -> t -> 'a
+    (** [fold f z t] is [f k0 v0 (... (f kn vn z))], where [k0 -> v0] is LRU and
+        [kn -> vn] is MRU. *)
 
-        [~dir] controls the order of folding. Defaults to [`Up]. *)
-
-    val iter : ?dir:dir -> (k -> v -> unit) -> t -> unit
-    (** [iter f t] applies [f] to all the bindings in [t].
-
-        [~dir] controls the order of application. Defaults to [`Up]. *)
+    val iter : (k -> v -> unit) -> t -> unit
+    (** [iter f t] applies [f] to all the bindings in [t] in in LRU-to-MRU
+        order. *)
 
     (** {1 Conversions} *)
 
-    val to_list : ?dir:dir -> t -> (k * v) list
-    (** [to_list t] are the bindings in [t]. [~dir] controls the order, defaults
-        to [`Up]. *)
-
     val of_list : (k * v) list -> t
-    (** [of_list kvs] is a map with the bindings from [kvs]. Its weight and
-        capacity are the total weight of its bindings.
+    (** [of_list kvs] is a map with bindings [kvs], where the order of the list
+        becomes LRU-to-MRU ordering, and its {{!capacity}[capacity]} is set to
+        its {{!weight}[weight]}.
 
-        With respect to duplicates and the recently-used order, it behaves as if
-        the bindings were added sequentially in the list order. *)
+        The resulting [t] has the same shape as if the bindings were
+        sequentially {{!add}added} in list order, except for capacity. *)
+
+    val to_list : t -> (k * v) list
+    (** [to_list t] are the bindings in [t] in LRU-to-MRU order. *)
 
     open Format
 
@@ -306,7 +324,8 @@ module M : sig
         [~pp_size] default to unspecified printers. *)
 
     (**/**)
-    val pp_dump : (formatter -> k * v -> unit) -> formatter -> t -> unit
+    val pp_dump : (formatter -> k -> unit) -> (formatter -> v -> unit)
+                    -> formatter -> t -> unit
     (**/**)
   end
 

@@ -3,9 +3,17 @@
 
 module type Weighted = sig type t val weight : t -> int end
 
+let invalid_arg fmt = Format.ksprintf invalid_arg fmt
+
 type 'a fmt = Format.formatter -> 'a -> unit
 
-let invalid_arg fmt = Format.ksprintf invalid_arg fmt
+let pf = Format.fprintf
+
+let pp_iter ?(sep = Format.pp_print_space) pp ppf i =
+  let first = ref true in
+  i @@ fun x ->
+    (match !first with true -> first := false | _ -> sep ppf ());
+    pp ppf x
 
 let cap_makes_sense ~m ~f cap =
   if cap < 0 then invalid_arg "Lru.%s.%s: ~cap:%d" m f cap
@@ -33,11 +41,13 @@ module F = struct
     val drop_lru : t -> t
     val pop_lru : t -> ((k * v) * t) option
     val fold : (k -> v -> 'a -> 'a) -> 'a -> t -> 'a
+    val fold_k : (k -> v -> 'a -> 'a) -> 'a -> t -> 'a
     val iter : (k -> v -> unit) -> t -> unit
-    val to_list : t -> (k * v) list
+    val iter_k : (k -> v -> unit) -> t -> unit
     val of_list : (k * v) list -> t
+    val to_list : t -> (k * v) list
     val pp : ?pp_size:(int * int) fmt -> ?sep:unit fmt -> (k * v) fmt -> t fmt
-    val pp_dump : (k * v) fmt -> t fmt
+    val pp_dump : k fmt -> v fmt -> t fmt
   end
 
   module Make (K: Map.OrderedType) (V: Weighted) = struct
@@ -91,53 +101,53 @@ module F = struct
         { t with gen = gen + 1; w; q }
 
     let remove k t = match Q.find k t.q with
-      | None -> t
-      | Some (_, v) -> { t with w = t.w - V.weight v; q = Q.remove k t.q }
+      None -> t
+    | Some (_, v) -> { t with w = t.w - V.weight v; q = Q.remove k t.q }
 
     let pop k t = match Q.find k t.q with
-      | None -> None
-      | Some (_, v) ->
-          Some (v, { t with w = t.w - V.weight v; q = Q.remove k t.q })
+      None -> None
+    | Some (_, v) ->
+        Some (v, { t with w = t.w - V.weight v; q = Q.remove k t.q })
 
     let lru t = match Q.min t.q with Some (k, (_, v)) -> Some (k, v) | _ -> None
 
     let pop_lru t = match Q.pop t.q with
-      | None -> None
-      | Some ((k, (_, v)), q) ->
-          Some ((k, v), { t with w = t.w - V.weight v; q })
+      None -> None
+    | Some ((k, (_, v)), q) ->
+        Some ((k, v), { t with w = t.w - V.weight v; q })
 
     let drop_lru t = match Q.pop t.q with
-      | None -> t
-      | Some ((_, (_, v)), q) -> { t with w = t.w - V.weight v; q }
-
-    let fold f z t = Q.fold (fun k (_, v) -> f k v) z t.q
-
-    let iter f t = Q.iter (fun k (_, v) -> f k v) t.q
+      None -> t
+    | Some ((_, (_, v)), q) -> { t with w = t.w - V.weight v; q }
 
     let of_list xs =
       let rec annotate g acc = function
-        | (k, v)::xs -> annotate (succ g) ((k, (g, v))::acc) xs
-        | []         -> (g, acc) in
+        (k, v)::xs -> annotate (succ g) ((k, (g, v))::acc) xs
+      | []         -> (g, List.rev acc) in
       let (gen, kgvs) = annotate g0 [] xs in
       let q = Q.of_list kgvs in
       let w = Q.fold (fun _ (_, v) w -> w + V.weight v) 0 q in
       { cap = w; w; gen; q }
 
-    let to_list t = Q.fold (fun k (_, v) kvs -> (k, v) :: kvs) [] t.q
+    let fold f z t =
+      List.fold_right (fun (k, (_, v)) acc -> f k v acc)
+        (Q.to_priority_list t.q) z
+    let iter f t =
+      Q.to_priority_list t.q |> List.iter (fun (k, (_, v)) -> f k v)
+    let to_list t = fold (fun k v kvs -> (k, v) :: kvs) [] t
 
-    let pp ?pp_size ?sep pp ppf t =
-      ( match pp_size with
-        | Some pps -> pps ppf (t.w, t.cap)
-        | _        -> Format.fprintf ppf "weight: %d/%d;@ " t.w t.cap );
-      Q.pp ?sep (fun ppf (k, (_, v)) -> pp ppf (k, v)) ppf t.q
+    let fold_k f z t = Q.fold (fun k (_, v) -> f k v) z t.q
+    let iter_k f t = Q.iter (fun k (_, v) -> f k v) t.q
 
-    let pp_dump pp ppf t =
-      let g x = x - g0 in
-      let sep ppf () = Format.fprintf ppf ",@ "
-      and ppkv ppf (k, (gen, v)) =
-        Format.fprintf ppf "@[%a @@ %d@]" pp (k, v) (g gen) in
-      Format.fprintf ppf "{@[weight: %d/%d;@ gen: %d;@ @[%a@]@]}"
-        t.w t.cap (g t.gen) Q.(pp ~sep ppkv) t.q
+    let pp ?(pp_size = fun _ -> ignore) ?sep pp ppf t =
+      let ppx ppf (k, (_, v)) = pp ppf (k, v) in
+      pf ppf "@[%a@[%a@]@]" pp_size (t.w, t.cap)
+        (pp_iter ?sep ppx) (fun f -> List.iter f (Q.to_priority_list t.q))
+
+    let pp_dump ppk ppv ppf =
+      let sep ppf () = pf ppf ";@ "
+      and ppkv ppf (k, v) = pf ppf "(@[%a,@ %a@])" ppk k ppv v in
+      pf ppf "of_list [%a]" (pp ~sep ppkv)
   end
 
 end
@@ -176,17 +186,13 @@ module M = struct
 
     let create () = { first = None; last = None }
 
-    let fold ?(dir=`Up) f s t =
-      let rec go_r f s = function
-        Some n -> go_r f (f n.value s) n.next | _ -> s in
-      let rec go_l f s = function
-        Some n -> go_l f (f n.value s) n.prev | _ -> s in
-      match dir with `Up -> go_r f s t.first | `Down -> go_l f s t.last
+    let iter f t =
+      let rec go f = function Some n -> f n.value; go f n.next | _ -> () in
+      go f t.first
 
-    let iter ?(dir=`Up) f t =
-      let rec go_r f = function Some n -> f n.value; go_r f n.next | _ -> () in
-      let rec go_l f = function Some n -> f n.value; go_l f n.prev | _ -> () in
-      match dir with `Up -> go_r f t.first | `Down -> go_l f t.last
+    let fold f t z =
+      let rec go f z = function Some n -> go f (f n.value z) n.prev | _ -> z in
+      go f z t.last
   end
 
   module type S = sig
@@ -205,15 +211,14 @@ module M = struct
     val promote : k -> t -> unit
     val add : k -> v -> t -> unit
     val remove : k -> t -> unit
-    type dir = [ `Up | `Down ]
     val lru : t -> (k * v) option
     val drop_lru : t -> unit
-    val fold : ?dir:dir -> (k -> v -> 'a -> 'a) -> 'a -> t -> 'a
-    val iter : ?dir:dir -> (k -> v -> unit) -> t -> unit
-    val to_list : ?dir:dir -> t -> (k * v) list
+    val fold : (k -> v -> 'a -> 'a) -> 'a -> t -> 'a
+    val iter : (k -> v -> unit) -> t -> unit
     val of_list : (k * v) list -> t
+    val to_list : t -> (k * v) list
     val pp : ?pp_size:(int * int) fmt -> ?sep:unit fmt -> (k * v) fmt -> t fmt
-    val pp_dump : (k * v) fmt -> t fmt
+    val pp_dump : k fmt -> v fmt -> t fmt
   end
 
   module Bake (HT: Hashtbl.SeededS) (V: Weighted) = struct
@@ -229,11 +234,8 @@ module M = struct
     }
 
     let size t = HT.length t.ht
-
     let weight t = t.w
-
     let capacity t = t.cap
-
     let is_empty t = HT.length t.ht = 0
 
     let cap_makes_sense = cap_makes_sense ~m:"M"
@@ -242,16 +244,14 @@ module M = struct
       cap_makes_sense ~f:"create" cap;
       { cap; w = 0; ht = HT.create ?random cap; q = Q.create () }
 
-    let lru t = match t.q.Q.first with
-      | Some n -> Some n.Q.value
-      | None   -> None
+    let lru t = match t.q.Q.first with Some n -> Some n.Q.value | _ -> None
 
     let drop_lru t = match t.q.Q.first with
-      | None -> ()
-      | Some ({ Q.value = (k, v); _ } as n) ->
-          t.w <- t.w - V.weight v;
-          HT.remove t.ht k;
-          Q.detach t.q n
+      None -> ()
+    | Some ({ Q.value = (k, v); _ } as n) ->
+        t.w <- t.w - V.weight v;
+        HT.remove t.ht k;
+        Q.detach t.q n
 
     let rec trim t = if weight t > t.cap then (drop_lru t; trim t)
 
@@ -280,37 +280,24 @@ module M = struct
 
     let mem k t = HT.mem t.ht k
 
-    type dir = [ `Up | `Down ]
-
-    let iter ?dir f t = Q.iter ?dir (fun (k, v) -> f k v) t.q
-
-    let fold ?dir f z t = Q.fold ?dir (fun (k, v) a -> f k v a) z t.q
-
-    let to_list ?dir t = Q.fold ?dir (fun x xs -> x::xs) [] t.q
+    let iter f t = Q.iter (fun (k, v) -> f k v) t.q
+    let fold f z t = Q.fold (fun (k, v) a -> f k v a) t.q z
+    let to_list t = Q.fold (fun x xs -> x::xs) t.q []
 
     let of_list xs =
       let t = create 0 in
       List.iter (fun (k, v) -> add k v t) xs;
-      resize (Q.fold (fun (_, v) w -> w + V.weight v) 0 t.q) t;
+      resize (Q.fold (fun (_, v) w -> w + V.weight v) t.q 0) t;
       t
 
-    let pp_q sep pp ppf t =
-      let fst = ref true in
-      Format.fprintf ppf "@[%a@]"
-        (fun ppf -> Q.iter ~dir:`Down @@ fun kv ->
-          if not !fst then sep ppf (); fst := false; pp ppf kv)
-        t.q
+    let pp ?(pp_size = fun _ -> ignore) ?sep pp ppf t =
+      pf ppf "@[%a@[%a@]@]" pp_size (t.w, t.cap)
+        (pp_iter ?sep pp) (fun f -> Q.iter f t.q)
 
-    let pp ?(pp_size) ?(sep=Format.pp_print_space) pp ppf t =
-      ( match pp_size with
-        | Some pps -> pps ppf (t.w, t.cap)
-        | _        -> Format.fprintf ppf "weight: %d/%d;@ " t.w t.cap );
-      pp_q sep pp ppf t
-
-    let pp_dump pp ppf t =
-      let sep ppf () = Format.fprintf ppf ",@ " in
-      Format.fprintf ppf "{@[weight: %d/%d;@ MRU: %a@]}"
-        t.w t.cap (pp_q sep pp) t
+    let pp_dump ppk ppv ppf =
+      let sep ppf () = pf ppf ";@ "
+      and ppkv ppf (k, v) = pf ppf "(@[%a,@ %a@])" ppk k ppv v in
+      pf ppf "of_list [%a]" (pp ~sep ppkv)
   end
 
   module SeededHash (H: Hashtbl.HashedType) = struct
