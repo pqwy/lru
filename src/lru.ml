@@ -90,7 +90,7 @@ module F = struct
 
     let promote k ({ gen; _ } as t) =
       if gen = max_int then empty t.cap else
-        { t with gen = gen + 1; q = Q.adjust (fun (_, v) -> gen, v) k t.q }
+        { t with gen = gen + 1; q = Q.adjust k (fun (_, v) -> gen, v) t.q }
 
     let rec add k v ({ gen; _ } as t) =
       if gen = max_int then add k v (empty t.cap) else

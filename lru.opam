@@ -8,11 +8,12 @@ dev-repo: "git+https://github.com/pqwy/lru.git"
 bug-reports: "https://github.com/pqwy/lru/issues"
 synopsis: "Scalable LRU caches"
 build: [ [ "dune" "subst" ] {pinned}
-         [ "dune" "build" "-p" name "-j" jobs ] ]
+         [ "dune" "build" "-p" name "-j" jobs ]
+         [ "dune" "runtest" "-p" name ] {with-test} ]
 depends: [
   "ocaml" {>="4.03.0"}
   "dune"  {build & >= "1.7"}
-  "psq"
+  "psq"   {>="0.2.0"}
   "qcheck-core"     {with-test}
   "qcheck-alcotest" {with-test}
   "alcotest"        {with-test}
