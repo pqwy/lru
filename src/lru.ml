@@ -332,6 +332,6 @@ let memo (type k) (type v)
            (struct type t = v let weight = weight end) in
     let c = C.create cap in
     let rec g k = match C.find k c with
-      | None   -> let v = f g k in C.add k v c; v
-      | Some v -> v in
+      None   -> let v = f g k in C.add k v c; v
+    | Some v -> C.promote k c; v in
     g
