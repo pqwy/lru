@@ -2,10 +2,10 @@
 
 %%VERSION%%
 
-lru provides LRU caches for OCaml. These are size-bounded finite maps that
-remove the least-recently-used (LRU) bindings to maintain their size constraint.
+Lru provides weight-bounded finite maps that can remove the least-recently-used
+(LRU) bindings in order to maintain a weight constraint.
 
-The library has two implementations: one is functional, the other imperative.
+Two implementations are provided: one is functional, the other imperative.
 
 lru is distributed under the ISC license.
 

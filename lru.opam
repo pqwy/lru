@@ -18,3 +18,7 @@ depends: [
   "qcheck-alcotest" {with-test}
   "alcotest"        {with-test}
 ]
+description: """
+Lru provides weight-bounded finite maps that can remove the least-recently-used
+(LRU) bindings in order to maintain a weight constraint.
+"""
