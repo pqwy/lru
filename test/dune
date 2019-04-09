@@ -1,7 +1,7 @@
 (test
   (name test)
   (modules test adapt)
-  (libraries lru alcotest))
+  (libraries lru alcotest qcheck-core qcheck-alcotest))
 
 (executable
   (name bench)
