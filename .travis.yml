@@ -5,13 +5,11 @@ sudo: required
 env:
   global:
     - PACKAGE="lru"
-    - PINS="psq.dev"
-    - TESTS=false
   matrix:
     - OCAML_VERSION=4.03
     - OCAML_VERSION=4.04
     - OCAML_VERSION=4.05
     - OCAML_VERSION=4.06
-    - OCAML_VERSION=4.07 TESTS=true
+    - OCAML_VERSION=4.07
 notifications:
   email: false

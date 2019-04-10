@@ -15,4 +15,4 @@ Homepage: https://github.com/pqwy/lru
 
 Interface, [online][doc].
 
-[doc]: https://pqwy.github.io/lru/doc
+[doc]: https://pqwy.github.io/lru/doc/lru/
