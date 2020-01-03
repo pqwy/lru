@@ -120,12 +120,22 @@ module F = struct
       None -> t
     | Some ((_, (_, v)), q) -> { t with w = t.w - V.weight v; q }
 
+    let sort_uniq_r xs =
+      let rec sieve k0 kv0 = function
+      | [] -> [kv0]
+      | (k, _ as kv)::kvs when K.compare k0 k = 0 -> sieve k kv kvs
+      | (k, _ as kv)::kvs -> kv0 :: sieve k kv kvs in
+      let cmp (k1, (g1, _)) (k2, (g2, _)) =
+        match K.compare k1 k2 with 0 -> compare (g1: int) g2 | r -> r
+      in
+      match List.sort cmp xs with [] -> [] | (k, _ as kv)::kvs -> sieve k kv kvs
+
     let of_list xs =
       let rec annotate g acc = function
-        (k, v)::xs -> annotate (succ g) ((k, (g, v))::acc) xs
-      | []         -> (g, List.rev acc) in
-      let (gen, kgvs) = annotate g0 [] xs in
-      let q = Q.of_list kgvs in
+      | (k, v)::kvs -> annotate (succ g) ((k, (g, v))::acc) kvs
+      | [] -> g, sort_uniq_r acc in
+      let gen, kgvs = annotate g0 [] xs in
+      let q = Q.of_sorted_list kgvs in
       let w = Q.fold (fun _ (_, v) w -> w + V.weight v) 0 q in
       { cap = w; w; gen; q }
 

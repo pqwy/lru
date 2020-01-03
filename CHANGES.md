@@ -1,3 +1,7 @@
+## (trunk)
+
+- tweak ordering implementation in `F.of_list`
+
 ## v0.3.0 2019-04-09
 
 Semantics cleanup.
