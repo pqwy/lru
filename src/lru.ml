@@ -242,7 +242,7 @@ module M = struct
 
     let create ?random ?initialSize cap =
       let hashSize =
-        match initialSize with | None  -> 0 | (Some v) -> v in
+        match initialSize with | None -> cap | (Some v) -> v in
       cap_makes_sense ~f:"create" cap;
       { cap; w = 0; ht = HT.create ?random hashSize; q = Q.create () }
 
