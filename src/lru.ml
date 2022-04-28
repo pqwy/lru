@@ -301,7 +301,7 @@ module M = struct
   end
 
   module SeededHash (H: Hashtbl.HashedType) = struct
-    include H let hash _ x = hash x
+    include H let seeded_hash _ x = hash x
   end
 
   module Make (K: Hashtbl.HashedType) (V: Weighted) =
