@@ -1,4 +1,4 @@
-## (trunk)
+## v0.3.1 2022-10-25
 
 - Ocaml 5.0 compatible. Thanks to @samoht for the report.
 - tweak ordering implementation in `F.of_list`
