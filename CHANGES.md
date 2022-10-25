@@ -1,5 +1,6 @@
 ## (trunk)
 
+- Ocaml 5.0 compatible. Thanks to @samoht for the report.
 - tweak ordering implementation in `F.of_list`
 
 ## v0.3.0 2019-04-09

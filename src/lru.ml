@@ -310,12 +310,12 @@ module M = struct
       pf ppf "of_list [%a]" (pp ~sep ppkv)
   end
 
-  module SeededHash (H: Hashtbl.HashedType) = struct
-    include H let hash _ x = hash x
-  end
-
   module Make (K: Hashtbl.HashedType) (V: Weighted) =
-    Bake (Hashtbl.MakeSeeded (SeededHash (K))) (V)
+    Bake (Hashtbl.MakeSeeded (struct
+      include K
+      let hash _ = hash
+      let seeded_hash = hash [@@ocaml.warning "-32"]
+    end)) (V)
 
   module MakeSeeded (K : Hashtbl.SeededHashedType) (V: Weighted) =
     Bake (Hashtbl.MakeSeeded (K)) (V)
