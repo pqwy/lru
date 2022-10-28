@@ -219,11 +219,14 @@ module M : sig
     type v
     (** Values in {{!t}[t]}. *)
 
-    val create : ?random:bool -> int -> t
-    (** [create ?random cap] is a new map with capacity [cap].
+    val create : ?random:bool -> ?initialSize:int -> int -> t
+    (** [create ?random ?initialSize cap] is a new map with capacity [cap].
 
         [~random] randomizes the underlying hash table. It defaults to [false].
         See {!Hashtbl.create}.
+
+        [~initialSize] sets the initial size of the underlying hash table. If not set,
+        [initialSize] is set to [cap].
 
         {b Note.} The internal hash table is created with size [cap].
 

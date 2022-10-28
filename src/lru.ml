@@ -209,7 +209,7 @@ module M = struct
     type t
     type k
     type v
-    val create : ?random:bool -> int -> t
+    val create : ?random:bool -> ?initialSize: int -> int -> t
     val is_empty : t -> bool
     val size : t -> int
     val weight : t -> int
@@ -250,9 +250,11 @@ module M = struct
 
     let cap_makes_sense = cap_makes_sense ~m:"M"
 
-    let create ?random cap =
+    let create ?random ?initialSize cap =
+      let hashSize =
+        match initialSize with | None -> cap | (Some v) -> v in
       cap_makes_sense ~f:"create" cap;
-      { cap; w = 0; ht = HT.create ?random cap; q = Q.create () }
+      { cap; w = 0; ht = HT.create ?random hashSize; q = Q.create () }
 
     let lru t = match t.q.Q.first with Some n -> Some n.Q.value | _ -> None
 
